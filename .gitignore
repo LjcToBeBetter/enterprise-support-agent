@@ -1,0 +1,35 @@
+#.gitignore 是 Git 的忽略规则文件，告诉 Git：哪些文件不需要纳入版本管理。
+#它不会删除文件，也不影响程序运行，只影响 Git 是否跟踪这些文件。
+#注意：已经被 Git 跟踪的文件，后来写进 .gitignore，也不会自动停止跟踪。
+
+# 忽略本地配置，里面可能有密码、API Key
+# 本地配置，后续可能包含数据库密码和 API Key
+.env
+
+# 忽略虚拟环境，依赖可以重新安装
+# 虚拟环境和 Python 缓存
+.venv/
+
+# 忽略 Python 自动生成的缓存
+__pycache__/
+*.py[cod]
+
+# PyCharm和其他编辑器的本地配置
+.idea/
+.vscode/
+
+# 测试、类型检查和代码检查缓存
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# 本地日志和临时文件
+*.log
+logs/
+tmp/
+
+# 操作系统自动生成的文件
+.DS_Store
+Thumbs.db
