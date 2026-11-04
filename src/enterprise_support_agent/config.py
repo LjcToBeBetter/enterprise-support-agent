@@ -161,6 +161,38 @@ class Settings(BaseSettings):
     # Qdrant Collection的向量维度必须与它完全一致。
     qdrant_vector_size: int = 1024
 
+    # Rerank模型名称。
+    #
+    # Rerank会同时读取用户问题和候选文本，
+    # 重新判断每个候选是否真正能够回答问题。
+    rerank_model_name: str = "qwen3-rerank"
+
+    # 阿里云百炼Rerank接口地址。
+    rerank_api_url: str = (
+        "https://dashscope.aliyuncs.com/"
+        "compatible-api/v1/reranks"
+    )
+
+    # Rerank服务API密钥。
+    #
+    # 当前与Embedding使用同一个百炼账号，
+    # 但配置字段单独保留，方便以后更换服务。
+    rerank_api_key: str
+
+    # 单次Rerank请求超时时间，单位为秒。
+    rerank_request_timeout_seconds: int = 30
+
+    # Rerank请求失败后的最大重试次数。
+    rerank_max_retries: int = 2
+
+    # 一次最多允许交给Rerank多少条候选文本。
+    rerank_max_documents: int = 50
+
+    # 单条候选文本最多保留多少字符。
+    #
+    # 当前文本块通常只有800字符，
+    # 这个限制主要用于防止未来传入过长内容。
+    rerank_max_document_characters: int = 3500
 
 # 创建配置对象：读取配置、转换类型并执行校验。
 settings = Settings()

@@ -34,6 +34,9 @@ from enterprise_support_agent.api.ticket_router import (
 from enterprise_support_agent.api.document_router import (
     router as document_router,
 )
+from enterprise_support_agent.api.knowledge_search_router import (
+    router as knowledge_search_router,
+)
 
 # 应用加载时，先完成日志配置。
 configure_logging()
@@ -87,6 +90,14 @@ app.include_router(ticket_router)
 # DELETE /organizations/{organization_id}/documents/{document_id}
 app.include_router(
     document_router
+)
+
+# 注册知识库检索接口。
+#
+# 注册后，FastAPI才能处理：
+# POST /organizations/{organization_id}/knowledge/search
+app.include_router(
+    knowledge_search_router
 )
 
 if __name__ == "__main__":

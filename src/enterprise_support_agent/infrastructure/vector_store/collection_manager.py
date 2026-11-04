@@ -12,6 +12,11 @@ Qdrant Collection管理器。
 from qdrant_client.models import (
     Distance,
     PayloadSchemaType,
+    TextIndexParams,
+    TextIndexType,
+    TextScoringParams,
+    TextScoringType,
+    TokenizerType,
     VectorParams,
 )
 
@@ -166,6 +171,41 @@ class QdrantCollectionManager:
 
                 # wait=True表示等待索引创建完成后
                 # 再继续执行后面的代码。
+                wait=True,
+            )
+
+        # content保存文本块正文的检索副本。
+        #
+        # 普通Payload索引只能用于过滤；
+        # 这里创建的是“全文索引”，还开启了BM25评分，
+        # 因此后面可以按照关键词相关性给文本块排名。
+        if "content" not in payload_schema:
+            await qdrant_client.create_payload_index(
+                collection_name=collection_name,
+                field_name="content",
+                field_schema=TextIndexParams(
+                    # 表示这是一个全文文本索引。
+                    # 全文索引：把长文本拆成关键词，并建立“关键词对应哪些 Point”的目录。
+                    type=TextIndexType.TEXT,
+
+                    # multilingual专门处理多语言文本，
+                    # 比普通word分词器更适合当前中文知识库。
+                    # 给 content 建全文索引时，使用多语言分词器拆分文本。
+                    # 不用像之前一样手写jieba分词
+                    tokenizer=(
+                        TokenizerType.MULTILINGUAL
+                    ),
+
+                    # 英文检索时不区分大小写。
+                    lowercase=True,
+
+                    # 开启BM25相关性评分。
+                    scoring=TextScoringParams(
+                        type=TextScoringType.BM25
+                    ),
+                ),
+
+                # 等全文索引创建完成后再继续。
                 wait=True,
             )
 

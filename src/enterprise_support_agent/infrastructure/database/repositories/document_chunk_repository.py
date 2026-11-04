@@ -180,3 +180,58 @@ class DocumentChunkRepository:
         return list(
             result.scalars().all()
         )
+
+    async def list_by_ids_and_organization(
+        self,
+        organization_id: UUID,
+        chunk_ids: list[UUID],
+    ) -> list[DocumentChunk]:
+        """
+        根据一批文本块ID查询当前组织的文本块。
+
+        这个方法主要用于向量检索：
+
+        1. Qdrant返回命中的文本块ID；
+        2. 使用这些ID查询PostgreSQL；
+        3. 取得真正的文本块正文。
+
+        同时检查organization_id，避免读取到其他组织的数据。
+        """
+
+        # 没有任何文本块ID时，不需要访问数据库。
+        if not chunk_ids:
+            return []
+
+        statement = (
+            select(DocumentChunk)
+
+            # 只允许查询当前组织的文本块。
+            .where(
+                DocumentChunk.organization_id
+                == organization_id,
+
+                # in_()会生成SQL中的IN条件。
+                #
+                # 例如chunk_ids中有id1和id2时，
+                # 对应的意思是：
+                # WHERE id IN (id1, id2)
+                #
+                # 也就是一次查询多条指定ID的记录。
+                DocumentChunk.id.in_(
+                    chunk_ids
+                ),
+            )
+        )
+
+        # 把SELECT语句发送给PostgreSQL执行。
+        result = await self.session.execute(
+            statement
+        )
+
+        # 返回查询到的DocumentChunk ORM对象列表。
+        #
+        # 数据库不保证这里的顺序和chunk_ids一致，
+        # 下一步会在Service中按照Qdrant分数重新排序。
+        return list(
+            result.scalars().all()
+        )

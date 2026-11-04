@@ -201,6 +201,14 @@ class DocumentChunkVectorStore:
                     "content_hash": (
                         chunk.content_hash
                     ),
+
+                    # 在Qdrant Payload中保存一份正文副本，
+                    # 供全文索引执行BM25关键词检索。
+                    #
+                    # PostgreSQL仍然是正文的真实数据源；
+                    # Qdrant中的content只是可以重新生成的
+                    # 检索索引数据。
+                    "content": chunk.content,
                 },
             )
 
