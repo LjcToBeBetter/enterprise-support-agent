@@ -78,16 +78,28 @@ async def search_knowledge(
         session=session
     )
 
-    # 每一路先召回候选，
-    # 再通过加权RRF保留最终结果。
+
+    # 完整检索流程：
+    #
+    # 1. 向量检索和BM25分别召回候选；
+    # 2. 使用加权RRF进行融合；
+    # 3. 使用Rerank模型进行精确重排序；
+    # 4. 返回最终文本块。
     search_results = await service.search(
         organization_id=organization_id,
         query=request_data.query,
-        # 现在有两路：向量检索和BM25检索，candidate_top_k表示分别最多找20条候选
+
+        # 每一路最多召回多少条。
         candidate_top_k=(
             request_data.candidate_top_k
         ),
-        # 两路候选经过合并、去重和 RRF 排名后，最终取前几条结果
+
+        # RRF融合后保留多少条交给Rerank。
+        rrf_top_k=(
+            request_data.rrf_top_k
+        ),
+
+        # Rerank后最终返回多少条。
         final_top_k=(
             request_data.final_top_k
         ),
@@ -110,6 +122,8 @@ async def search_knowledge(
             vector_score=result.vector_score,
             bm25_rank=result.bm25_rank,
             bm25_score=result.bm25_score,
+            rerank_rank=result.rerank_rank,
+            rerank_score=result.rerank_score,
         )
         for result in search_results
     ]

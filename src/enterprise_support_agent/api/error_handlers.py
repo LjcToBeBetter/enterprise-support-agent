@@ -42,6 +42,13 @@ from enterprise_support_agent.application.exceptions import (
     ObjectStorageUnavailableError,
     UnsupportedDocumentTypeError,
 )
+from enterprise_support_agent.application.citation_validator import (
+    InvalidCitationError,
+)
+from enterprise_support_agent.application.agent_service import (
+    AgentLimitExceededError,
+    AgentEmptyResponseError,
+)
 
 def register_exception_handlers(app: FastAPI) -> None:
     """给应用注册异常处理器。"""
@@ -707,6 +714,101 @@ def register_exception_handlers(app: FastAPI) -> None:
             content=error.model_dump(),
             headers={
                 "X-Request-ID": request_id
+            },
+        )
+
+    @app.exception_handler(InvalidCitationError)
+    async def handle_invalid_citation(
+        request: Request,
+        exc: InvalidCitationError,
+    ) -> JSONResponse:
+        """处理模型重新生成后引用仍然不合格的情况。"""
+
+        request_id = getattr(
+            request.state,
+            "request_id",
+            "unknown",
+        )
+
+        error = ErrorResponse(
+            code="INVALID_ANSWER_CITATION",
+            message=(
+                "生成答案的引用校验未通过，请稍后重试"
+            ),
+            request_id=request_id,
+        )
+
+        return JSONResponse(
+            # 502表示后端依赖的模型
+            # 返回了不符合要求的结果。
+            status_code=502,
+            content=error.model_dump(),
+            headers={
+                "X-Request-ID": request_id,
+            },
+        )
+
+    @app.exception_handler(AgentLimitExceededError)
+    async def handle_agent_limit_exceeded(
+        request: Request,
+        exc: AgentLimitExceededError,
+    ) -> JSONResponse:
+        """处理Agent达到执行上限仍未完成任务的情况。"""
+
+        # 读取本次请求编号，
+        # 方便根据客户端反馈定位后端日志。
+        request_id = getattr(
+            request.state,
+            "request_id",
+            "unknown",
+        )
+
+        error = ErrorResponse(
+            code="AGENT_EXECUTION_LIMIT_EXCEEDED",
+            message=(
+                "本次任务未能在执行次数限制内完成，"
+                "请缩小问题范围后重试"
+            ),
+            request_id=request_id,
+        )
+
+        return JSONResponse(
+            # 503表示本次服务无法完成请求。
+            # 后端服务本身仍然继续运行。
+            status_code=503,
+            content=error.model_dump(),
+            headers={
+                "X-Request-ID": request_id,
+            },
+        )
+
+    @app.exception_handler(AgentEmptyResponseError)
+    async def handle_agent_empty_response(
+        request: Request,
+        exc: AgentEmptyResponseError,
+    ) -> JSONResponse:
+        """把模型持续返回空内容转换成明确的接口错误。"""
+
+        request_id = getattr(
+            request.state,
+            "request_id",
+            "unknown",
+        )
+
+        error = ErrorResponse(
+            code="AGENT_EMPTY_RESPONSE",
+            message=(
+                "模型暂时未能生成有效回答，请稍后重试"
+            ),
+            request_id=request_id,
+        )
+
+        return JSONResponse(
+            # 502表示下游模型没有返回有效结果。
+            status_code=502,
+            content=error.model_dump(),
+            headers={
+                "X-Request-ID": request_id,
             },
         )
 

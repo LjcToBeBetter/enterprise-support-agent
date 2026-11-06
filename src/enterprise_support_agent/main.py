@@ -37,6 +37,12 @@ from enterprise_support_agent.api.document_router import (
 from enterprise_support_agent.api.knowledge_search_router import (
     router as knowledge_search_router,
 )
+from enterprise_support_agent.api.knowledge_answer_router import (
+    router as knowledge_answer_router,
+)
+from enterprise_support_agent.api.agent_router import (
+    router as agent_router,
+)
 
 # 应用加载时，先完成日志配置。
 configure_logging()
@@ -80,6 +86,14 @@ app.include_router(auth_router)
 
 app.include_router(ticket_router)
 
+# 注册企业知识库RAG问答接口。
+#
+# 注册后，FastAPI才能处理：
+# POST /organizations/{organization_id}/knowledge/answer
+app.include_router(
+    knowledge_answer_router
+)
+
 # 注册知识库文档接口。
 #
 # 注册后，FastAPI才能处理：
@@ -99,6 +113,12 @@ app.include_router(
 app.include_router(
     knowledge_search_router
 )
+# 注册企业支持Agent接口。
+#
+# 注册后才能处理：
+# POST /organizations/{organization_id}/agent/chat
+app.include_router(agent_router)
+
 
 if __name__ == "__main__":
     uvicorn.run(

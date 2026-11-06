@@ -194,6 +194,39 @@ class Settings(BaseSettings):
     # 这个限制主要用于防止未来传入过长内容。
     rerank_max_document_characters: int = 3500
 
+    # 用来根据知识库内容生成最终答案的聊天模型。
+    llm_model_name: str = "qwen-plus"
+
+    # 阿里云百炼的OpenAI兼容接口地址。
+    llm_base_url: str = (
+        "https://dashscope.aliyuncs.com/"
+        "compatible-mode/v1"
+    )
+
+    # 调用聊天模型使用的API Key。
+    #
+    # 当前可以与Embedding和Rerank使用同一个Key，
+    # 但单独设置字段，方便以后更换模型供应商。
+    llm_api_key: str
+
+    # 控制模型回答的随机程度。
+    #
+    # RAG问答需要尽量稳定、忠于知识库，
+    # 所以设置为较低的0.1。
+    llm_temperature: float = 0.1
+
+    # 调用大模型的超时时间，单位为秒。
+    llm_request_timeout_seconds: int = 60
+
+    # 调用大模型失败后的重试次数。
+    llm_max_retries: int = 2
+
+    # 允许作为RAG资料的最低Rerank分数。
+    #
+    # 低于这个分数的文本块不会交给大模型，
+    # 防止模型根据不相关资料强行回答。
+    rag_min_rerank_score: float = 0.15
+
 # 创建配置对象：读取配置、转换类型并执行校验。
 settings = Settings()
 
