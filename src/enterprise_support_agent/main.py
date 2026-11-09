@@ -43,6 +43,9 @@ from enterprise_support_agent.api.knowledge_answer_router import (
 from enterprise_support_agent.api.agent_router import (
     router as agent_router,
 )
+from enterprise_support_agent.api.agent_conversation_router import (
+    router as agent_conversation_router,
+)
 
 # 应用加载时，先完成日志配置。
 configure_logging()
@@ -119,6 +122,10 @@ app.include_router(
 # POST /organizations/{organization_id}/agent/chat
 app.include_router(agent_router)
 
+# 注册Agent会话创建、查询接口。
+app.include_router(
+    agent_conversation_router
+)
 
 if __name__ == "__main__":
     uvicorn.run(

@@ -415,3 +415,35 @@ class ObjectStorageUnavailableError(
         super().__init__(
             "文件存储服务暂时不可用，请稍后重试"
         )
+
+
+class AgentLimitExceededError(RuntimeError):
+    """Agent超过允许的模型轮数或工具调用次数。"""
+
+
+class AgentEmptyResponseError(RuntimeError):
+    """模型重试后，仍没有返回文字或工具调用。"""
+
+
+class AgentConversationNotFoundError(ApplicationError):
+    """当前用户在当前组织中找不到指定会话。"""
+
+    error_code = "AGENT_CONVERSATION_NOT_FOUND"
+
+    def __init__(
+        self,
+        conversation_id: UUID,
+    ) -> None:
+        self.conversation_id = conversation_id
+
+        # 不区分“会话不存在”和“属于别人”，
+        # 避免向当前用户泄露他人的会话信息。
+        super().__init__(
+            "会话不存在或无法访问"
+        )
+
+
+class AgentConversationConflictError(ApplicationError):
+    """会话正在执行，或存在尚未完成的任务。"""
+
+    error_code = "AGENT_CONVERSATION_CONFLICT"

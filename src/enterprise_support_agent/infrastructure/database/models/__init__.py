@@ -38,6 +38,9 @@ from enterprise_support_agent.infrastructure.database.models.document_chunk impo
     DocumentChunk,
 )
 
+from enterprise_support_agent.infrastructure.database.models.agent_conversation import (
+    AgentConversation,
+)
 # __all__表示：
 # 当外部模块从当前models包导入内容时，
 # 这些是当前包明确对外提供的模型名称。
@@ -50,4 +53,5 @@ __all__ = [
     "Ticket",
     "KnowledgeDocument",
     "DocumentChunk",
+    "AgentConversation",
 ]

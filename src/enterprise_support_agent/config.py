@@ -14,6 +14,9 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from pydantic import Field,SecretStr
+
+from typing import Literal
 
 # 根据当前文件的位置找到项目根目录。
 # parents[0]：enterprise_support_agent 包目录
@@ -226,6 +229,78 @@ class Settings(BaseSettings):
     # 低于这个分数的文本块不会交给大模型，
     # 防止模型根据不相关资料强行回答。
     rag_min_rerank_score: float = 0.15
+
+
+    # 单次调用模型时，消息上下文的Token预算。
+    #
+    # 这是项目设置的输入预算，
+    # 不是qwen-plus本身的最大上下文容量。
+    agent_context_max_tokens: int = Field(
+        default=12000,
+        ge=1,
+    )
+
+    # 历史消息达到这个估算长度后，开始尝试摘要压缩。
+    # 提前触发，为新问题、工具结果等预留空间。
+    agent_summary_trigger_tokens: int = Field(
+        default=8000,
+        ge=1,
+    )
+
+    # 压缩时，尽量完整保留最近4轮用户对话。
+    #
+    # 一轮可能包含：
+    # 用户问题、模型工具调用、工具结果、最终回答。
+    # 因此不能简单当作4条消息。
+    agent_recent_turns: int = Field(
+        default=4,
+        ge=1,
+    )
+
+    # 生成历史摘要时，限制模型的输出Token数量。
+    agent_summary_max_tokens: int = Field(
+        default=1200,
+        ge=1,
+    )
+
+    # 知识库Agent使用哪种方式调用检索工具。
+    # Literal限制只能填写local或mcp。
+    agent_knowledge_backend: Literal["local", "mcp"] = "local"
+
+    # Agent作为MCP客户端时，要连接的服务地址。
+    mcp_server_url: str = "http://127.0.0.1:8003/mcp"
+
+
+    # RabbitMQ所在的主机地址。
+    # Python程序目前运行在Windows本机，通过映射端口访问容器。
+    rabbitmq_host: str = "127.0.0.1"
+
+    # 程序连接RabbitMQ的端口。
+    # 15672是网页管理端口，这里使用5672。
+    rabbitmq_port: int = Field(
+        default=5672,
+        ge=1,
+        le=65535,
+    )
+
+    # 连接账号，必须与创建容器时设置的账号一致。
+    rabbitmq_username: str = "support_app"
+
+    # SecretStr会在打印配置对象时隐藏密码。
+    # 它不会加密密码，连接时仍需取出实际字符串。
+    rabbitmq_password: SecretStr
+
+    # RabbitMQ内部的逻辑分区，不是电脑的主机地址。
+    # 不同分区可以拥有各自的队列和权限。
+    # 目前使用默认分区，名字就是一个斜杠。
+    rabbitmq_virtual_host: str = "/"
+
+    # 建立连接最多等待多少秒，避免一直等下去。
+    rabbitmq_connection_timeout_seconds: float = Field(
+        default=10.0,
+        gt=0,
+    )
+
 
 # 创建配置对象：读取配置、转换类型并执行校验。
 settings = Settings()

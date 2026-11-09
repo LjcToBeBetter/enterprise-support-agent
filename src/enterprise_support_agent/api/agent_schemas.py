@@ -14,7 +14,12 @@ from pydantic import (
     Field,
     field_validator,
 )
+from uuid import UUID
+from typing import Literal
 
+from enterprise_support_agent.api.agent_approval_schemas import (
+    PendingTicketApprovalResponse,
+)
 
 class AgentRequest(BaseModel):
     """前端向Agent提交的任务。"""
@@ -44,6 +49,15 @@ class AgentRequest(BaseModel):
         description="是否允许本次Agent任务创建工单",
     )
 
+    # 前端先创建会话，
+    # 再把返回的真实会话ID放到这里。
+    #
+    # 这个ID只是定位会话，
+    # 后端仍然必须检查归属。
+    conversation_id: UUID = Field(
+        description="本次提问所属的会话ID",
+    )
+
     @field_validator("query")
     @classmethod
     def validate_query(
@@ -63,16 +77,34 @@ class AgentRequest(BaseModel):
 
 
 class AgentResponse(BaseModel):
-    """一次Agent任务执行完成后的响应格式。"""
+    """返回Agent的执行状态、回答或待审批的工单信息。"""
 
-    answer: str = Field(
-        description="Agent生成的最终回答",
+    # 前端根据status决定展示什么。
+    # completed：展示回答。
+    # awaiting_approval：展示工单内容及同意、拒绝按钮。
+    status: Literal[
+        "completed",
+        "awaiting_approval",
+    ] = Field(
+        description="Agent已完成，或者正在等待审批",
     )
 
-    # 当前记录的是工具调用尝试次数。
-    # 包含工具名错误或参数校验失败的尝试，
-    # 不等同于成功执行次数。
+    # 等待审批时还没有最终回答，因此允许为None。
+    answer: str | None = Field(
+        default=None,
+        description="Agent完成任务后的最终回答",
+    )
+
     tool_call_count: int = Field(
         ge=0,
-        description="本次任务的工具调用尝试次数",
+        description="本次任务已记录的工具调用尝试次数",
+    )
+
+    # 标识本次结果属于哪个会话。
+    conversation_id: UUID
+
+    # 等待审批时有值，正常完成时为None。
+    pending_approval: PendingTicketApprovalResponse | None = Field(
+        default=None,
+        description="需要用户确认的工单信息",
     )

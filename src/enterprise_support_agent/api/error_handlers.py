@@ -41,6 +41,8 @@ from enterprise_support_agent.application.exceptions import (
     EmptyDocumentFileError,
     ObjectStorageUnavailableError,
     UnsupportedDocumentTypeError,
+    AgentConversationNotFoundError,
+    AgentConversationConflictError,
 )
 from enterprise_support_agent.application.citation_validator import (
     InvalidCitationError,
@@ -806,6 +808,65 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             # 502表示下游模型没有返回有效结果。
             status_code=502,
+            content=error.model_dump(),
+            headers={
+                "X-Request-ID": request_id,
+            },
+        )
+
+    @app.exception_handler(AgentConversationNotFoundError)
+    async def handle_agent_conversation_not_found(
+        request: Request,
+        exc: AgentConversationNotFoundError,
+    ) -> JSONResponse:
+        """处理会话不存在或不属于当前用户的情况。"""
+
+        request_id = getattr(
+            request.state,
+            "request_id",
+            "unknown",
+        )
+
+        error = ErrorResponse(
+            code=exc.error_code,
+            message=exc.message,
+            request_id=request_id,
+        )
+
+        return JSONResponse(
+            # 不区分“根本不存在”和“属于其他用户”，
+            # 避免泄露其他用户的会话信息。
+            status_code=404,
+            content=error.model_dump(),
+            headers={
+                "X-Request-ID": request_id,
+            },
+        )
+
+    @app.exception_handler(AgentConversationConflictError)
+    async def handle_agent_conversation_conflict(
+        request: Request,
+        exc: AgentConversationConflictError,
+    ) -> JSONResponse:
+        """处理会话正在执行或上次任务尚未完成的情况。"""
+
+        request_id = getattr(
+            request.state,
+            "request_id",
+            "unknown",
+        )
+
+        # 异常中的message已经说明具体原因：
+        # 正在被其他请求使用，或者存在未完成任务。
+        error = ErrorResponse(
+            code=exc.error_code,
+            message=exc.message,
+            request_id=request_id,
+        )
+
+        return JSONResponse(
+            # 409表示本次操作与会话当前状态冲突。
+            status_code=409,
             content=error.model_dump(),
             headers={
                 "X-Request-ID": request_id,

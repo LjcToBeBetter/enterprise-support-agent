@@ -33,6 +33,8 @@ from enterprise_support_agent.application.agent_tools import (
 from enterprise_support_agent.application.exceptions import (
     OrganizationAccessDeniedError,
     TicketNotFoundError,
+    AgentEmptyResponseError,
+    AgentLimitExceededError,
 )
 from enterprise_support_agent.infrastructure.database.repositories.membership_repository import (
     MembershipRepository,
@@ -41,12 +43,6 @@ from enterprise_support_agent.infrastructure.llm.client import (
     chat_model,
 )
 
-
-class AgentLimitExceededError(RuntimeError):
-    """Agent超过允许的模型轮数或工具调用次数。"""
-
-class AgentEmptyResponseError(RuntimeError):
-    """模型重试后，仍没有返回文字或工具调用。"""
 
 @dataclass(
     frozen=True,

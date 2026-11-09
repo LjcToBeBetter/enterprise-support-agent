@@ -91,8 +91,16 @@ def create_access_token(
 
 def decode_access_token(
     token: str,
+    # 单独的 * 表示：后面的参数必须写参数名传入
+    *,
+    audience: str | None = None,
 ) -> UUID:
-    """验证JWT并返回令牌中的用户ID。"""
+    """
+    校验JWT，返回用户ID。
+
+    audience：当前服务期望的令牌使用目标。就是希望当前令牌给谁使用
+    星号表示这个参数必须写成audience=...的形式传入。
+    """
 
     # jwt.decode()由PyJWT提供。
     #
@@ -106,13 +114,18 @@ def decode_access_token(
     payload = jwt.decode(
         jwt=token,
         key=settings.jwt_secret_key,
-
-        # algorithms必须是算法列表。
-        # 明确限制只接受项目配置的算法，
-        # 防止攻击者自行更换签名算法。
         algorithms=[
-            settings.jwt_algorithm
+            settings.jwt_algorithm,
         ],
+
+        # 把本方法收到的audience交给PyJWT。
+        # PyJWT负责检查令牌里的aud是否与它匹配。
+        audience=audience,
+
+        # 要求令牌必须包含用户ID和过期时间。
+        options={
+            "require": ["sub", "exp"],
+        },
     )
 
     # dict.get("sub")读取Payload中的sub。

@@ -39,7 +39,11 @@ from enterprise_support_agent.application.ticket_service import (
 from enterprise_support_agent.application.ticket_enums import (
     TicketPriority,
 )
+from enterprise_support_agent.config import settings
 
+from enterprise_support_agent.application.mcp_agent_tools import (
+    create_mcp_knowledge_search_tool,
+)
 
 def create_knowledge_search_tool(
     session: AsyncSession,
@@ -316,21 +320,34 @@ def create_agent_tools(
     session: AsyncSession,
     context: AgentContext,
 ) -> list[BaseTool]:
-    """根据本次请求设置，创建允许使用的工具列表。"""
+    """根据配置选择检索方式，并创建本次允许使用的工具。"""
 
-    tools: list[BaseTool] = [
-        create_knowledge_search_tool(
+    if settings.agent_knowledge_backend == "mcp":
+        # MCP模式：工具执行时，通过HTTP调用MCP检索服务。
+        # 用户和组织身份仍然绑定到当前请求的context。
+        knowledge_tool = create_mcp_knowledge_search_tool(
+            context=context,
+        )
+    else:
+        # 本地模式：沿用之前的检索工具，
+        # 直接调用本地KnowledgeSearchService。
+        knowledge_tool = create_knowledge_search_tool(
             session=session,
             context=context,
-        ),
+        )
+
+    # 两种模式只选择一种检索工具，不会同时调用两遍。
+    # 查询工单继续使用原来的本地工具。
+    tools: list[BaseTool] = [
+        knowledge_tool,
         create_get_ticket_tool(
             session=session,
             context=context,
         ),
     ]
 
-    # 只有本次请求明确允许创建，
-    # 才把创建工单工具加入列表。
+    # 创建工单仍由本次请求的开关控制。
+    # 后续工具节点中的人工审批逻辑继续保留。
     if context.allow_ticket_creation:
         tools.append(
             create_create_ticket_tool(
@@ -340,4 +357,3 @@ def create_agent_tools(
         )
 
     return tools
-

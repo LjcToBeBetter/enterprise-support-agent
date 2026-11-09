@@ -37,6 +37,16 @@ from enterprise_support_agent.api.user_schemas import (
 from enterprise_support_agent.infrastructure.database.models.user import (
     User,
 )
+from fastapi import (
+    APIRouter,
+    Depends,
+    Response,
+)
+from enterprise_support_agent.config import settings
+
+from enterprise_support_agent.security.mcp_tokens import (
+    create_mcp_access_token,
+)
 
 router = APIRouter(
     prefix="/auth",
@@ -98,4 +108,42 @@ async def get_my_profile(
 
     return UserResponse.model_validate(
         current_user
+    )
+
+
+@router.post(
+    "/mcp-token",
+    response_model=TokenResponse,
+    summary="申请MCP专用访问令牌",
+)
+async def issue_mcp_token(
+    # FastAPI注入的响应对象，可用来设置响应头。
+    response: Response,
+
+    # 先校验普通登录令牌，并查询当前用户。
+    # 验证失败时，不会进入下面的签发逻辑。
+    current_user: User = Depends(
+        get_current_user
+    ),
+) -> TokenResponse:
+    """为当前已登录用户签发知识库检索用途的MCP令牌。"""
+
+    # 用户ID来自已验证的身份，
+    # 不接受前端或模型自行填写的用户ID。
+    access_token = create_mcp_access_token(
+        user_id=current_user.id,
+    )
+
+    # 告诉浏览器和代理：不要缓存包含令牌的响应。
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"] = "no-cache"
+
+    # 复用已有响应格式。
+    # 配置单位是分钟，expires_in的单位是秒。
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=(
+            settings.jwt_access_token_expire_minutes * 60
+        ),
     )

@@ -25,7 +25,9 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from enterprise_support_agent.infrastructure.storage.object_storage import object_storage
-
+from enterprise_support_agent.infrastructure.checkpoint.client import (
+    open_checkpointer,
+)
 
 # getLogger 返回日志记录器对象。
 # __name__ 是当前模块名称：
@@ -37,26 +39,14 @@ logger = logging.getLogger(__name__)
 async def lifespan(
     app: FastAPI,
 ):
-    """
-    管理FastAPI应用的启动和关闭过程。
-
-    yield之前：
-        服务启动阶段。
-
-    yield之后：
-        服务关闭阶段。
-    """
+    """管理对象存储检查和Checkpointer的生命周期。"""
 
     logger.info(
         "服务启动：%s",
         app.title,
     )
 
-    # boto3是同步客户端，
-    # ensure_bucket_exists()执行时可能等待网络响应。
-    #
-    # asyncio.to_thread()把这个同步操作放进工作线程，
-    # 避免阻塞FastAPI的事件循环。
+    # 保留原来的对象存储检查。
     await asyncio.to_thread(
         object_storage.ensure_bucket_exists
     )
@@ -66,14 +56,43 @@ async def lifespan(
         object_storage.bucket_name,
     )
 
-    try:
-        # yield执行后，
-        # FastAPI开始正式接收HTTP请求。
-        yield
+    # 进入时：
+    # 打开连接池，等待连接就绪，
+    # 取得open_checkpointer()中yield出来的对象。
+    #
+    # 退出时：
+    # open_checkpointer()继续执行清理，
+    # 关闭连接池。
+    async with open_checkpointer() as checkpointer:
+        # app.state是FastAPI应用的共享存储位置。
+        #
+        # 将AsyncPostgresSaver对象放在这里，
+        # 后续接口就能从request.app.state中取得。
+        #
+        # 这里保存的是运行时对象，
+        # 不是把Checkpoint保存到了app.state。
+        app.state.checkpointer = checkpointer
 
-    finally:
-        # 应用关闭时执行这里。
         logger.info(
-            "服务关闭：%s",
-            app.title,
+            "Checkpoint数据库连接池已就绪"
         )
+
+        try:
+            # 暂停在这里，让FastAPI开始处理请求。
+            #
+            # 因为仍处在上面的async with里面，
+            # 所以连接池会在服务运行期间保持打开。
+            yield
+
+        finally:
+            # 后端关闭时，先移除共享对象的引用，
+            # 避免继续从app.state取得它。
+            del app.state.checkpointer
+
+            logger.info(
+                "服务关闭：%s",
+                app.title,
+            )
+
+    # 离开async with后，
+    # open_checkpointer()负责关闭连接池。

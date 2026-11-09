@@ -65,6 +65,46 @@ if config.config_file_name is not None:
 # 用Base.metadata中的表结构和真实数据库进行比较。
 target_metadata = Base.metadata
 
+
+# LangGraph Checkpointer自己创建和维护的表。
+# 不为它们编写业务ORM，也不交给Alembic自动比较。
+CHECKPOINT_TABLE_NAMES = {
+    "checkpoint_migrations",
+    "checkpoints",
+    "checkpoint_blobs",
+    "checkpoint_writes",
+}
+
+
+def include_name(
+    name: str | None,
+    type_: str,
+    parent_names: dict[str, str | None],
+) -> bool:
+    """
+    决定数据库中的对象是否参与自动迁移比较。
+
+    Alembic自动调用这个方法并传入：
+
+    name：对象名称，例如表名。
+    type_：对象类型，例如table。
+    parent_names：所属schema、表等上级信息，本次暂不使用。
+
+    返回True：参与比较。
+    返回False：忽略。
+    """
+
+    if (
+        type_ == "table"
+        and name in CHECKPOINT_TABLE_NAMES
+    ):
+        return False
+
+    # 其他对象继续按原来的方式比较。
+    return True
+
+
+
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
@@ -89,6 +129,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_name=include_name,
     )
 
     with context.begin_transaction():
@@ -96,7 +137,14 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+
+        # 将过滤方法交给Alembic，
+        # 自动生成迁移时由它调用。
+        include_name=include_name,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
