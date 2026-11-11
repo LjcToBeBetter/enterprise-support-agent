@@ -47,15 +47,28 @@ from enterprise_support_agent.infrastructure.database.session import (
 from enterprise_support_agent.api.organization_dependencies import (
     require_organization_admin,
 )
-from enterprise_support_agent.application.document_processing_service import (
-    DocumentProcessingService,
+# from enterprise_support_agent.application.document_processing_service import (
+#     DocumentProcessingService,
+# )
+
+from enterprise_support_agent.application.document_processing_job_service import (
+    DocumentProcessingJobService,
 )
+
 from enterprise_support_agent.infrastructure.database.models.organization_membership import (
     OrganizationMembership,
 )
 
 # 把中文、空格等特殊字符转换成适合放进 URL或HTTP响应头的编码格式
 from urllib.parse import quote
+
+# Request代表本次HTTP请求，由FastAPI自动提供。
+from fastapi import Request
+
+from enterprise_support_agent.api.document_schemas import (
+    DocumentProcessingJobResponse,
+)
+
 
 
 # 当前文件中所有接口的公共路径前缀。
@@ -381,71 +394,155 @@ async def delete_document(
 
 @router.post(
     "/{document_id}/process",
+    response_model=DocumentProcessingJobResponse,
 
-    # 204表示处理成功，
-    # 但接口不返回响应体。
-    status_code=status.HTTP_204_NO_CONTENT,
+    # 202表示任务已接受。
+    # 后面的文档处理由Worker执行。
+    status_code=status.HTTP_202_ACCEPTED,
 )
 async def process_document(
-    # FastAPI从URL路径中读取组织ID。
+    # 从URL路径中取得组织ID和文档ID。
     organization_id: UUID,
-
-    # FastAPI从URL路径中读取文档ID。
     document_id: UUID,
 
-    # 当前请求使用的数据库Session。
+    # FastAPI自动提供，不需要前端传入。
+    # 后面通过request.app取得当前FastAPI应用。
+    request: Request,
+
+    # 本次请求使用的数据库Session。
     session: AsyncSession = Depends(
-        get_db_session
+        get_db_session,
     ),
 
-    # 在执行接口之前，
-    # FastAPI会先调用require_organization_admin。
-    #
-    # 它会：
-    # 1. 验证JWT；
-    # 2. 查询当前用户的组织成员关系；
-    # 3. 确认当前用户是admin；
-    # 4. 验证失败时直接返回401或403。
-    #
-    # 变量名前面的下划线表示：
-    # 这个接口只需要完成权限检查，
-    # 后面的业务代码不会直接使用这个对象。
-    _admin_membership: OrganizationMembership = Depends(
-        require_organization_admin
+    # 验证登录身份，并要求当前用户是这个组织的管理员。
+    # 验证成功后，得到当前用户的组织成员关系对象。
+    admin_membership: OrganizationMembership = Depends(
+        require_organization_admin,
     ),
-) -> Response:
+) -> DocumentProcessingJobResponse:
     """
-    手动触发知识库文档处理。
+    提交指定文档的后台处理任务。
 
-    当前只用于开发和测试。
-
-    正式生产环境后面会改成：
-    上传成功后向RabbitMQ发送处理任务，
-    再由后台Worker执行文档处理。
+    保存任务记录并向RabbitMQ发送消息，
+    返回任务ID和当前状态。
     """
 
-    # 创建文档处理Service。
-    service = DocumentProcessingService(
-        session=session
+    service = DocumentProcessingJobService(
+        session=session,
     )
 
-    # 执行完整处理流程：
-    #
-    # 1. 查询文档元数据；
-    # 2. status修改为processing；
-    # 3. 从RustFS读取PDF；
-    # 4. 提取PDF正文；
-    # 5. status修改为parsed；
-    # 6. 切分文本块；
-    # 7. 保存到document_chunks表；
-    # 8. status修改为chunked。
-    await service.process_document(
+    # 取得lifespan启动阶段保存的RabbitMQ连接。
+    connection = request.app.state.rabbitmq_connection
+
+    # 调用统一提交方法：
+    # 检查权限 → 查询文档 → 保存任务 → 发送消息 → 更新状态。
+    job = await service.submit_job(
         organization_id=organization_id,
         document_id=document_id,
+
+        # 成员关系中的user_id，就是已验证的当前登录用户ID。
+        current_user_id=admin_membership.user_id,
+        connection=connection,
     )
 
-    # 处理成功后返回204，
-    # 不需要额外返回JSON。
-    return Response(
-        status_code=status.HTTP_204_NO_CONTENT
+    # 从任务ORM对象读取属性，
+    # 转换成接口返回的数据格式。
+    return DocumentProcessingJobResponse.model_validate(
+        job,
+    )
+
+
+@router.get(
+    "/processing-jobs/{job_id}",
+    response_model=DocumentProcessingJobResponse,
+)
+async def get_document_processing_job(
+    # 从URL路径中接收组织ID和任务ID。
+    organization_id: UUID,
+    job_id: UUID,
+
+    # FastAPI通过依赖提供本次请求的数据库Session。
+    session: AsyncSession = Depends(
+        get_db_session,
+    ),
+
+    # 验证登录身份，并要求当前用户是该组织的管理员。
+    admin_membership: OrganizationMembership = Depends(
+        require_organization_admin,
+    ),
+) -> DocumentProcessingJobResponse:
+    """
+    查询指定文档处理任务的执行情况。
+
+    只有当前组织的管理员可以查询。
+    返回任务状态、尝试次数、失败原因和执行时间。
+    """
+
+    service = DocumentProcessingJobService(
+        session=session,
+    )
+
+    # 查询PostgreSQL中的任务记录。
+    # 当前用户ID来自已验证的成员关系。
+    job = await service.get_job(
+        organization_id=organization_id,
+        job_id=job_id,
+        current_user_id=admin_membership.user_id,
+    )
+
+    # 将任务ORM对象转换成接口响应模型，
+    # 由FastAPI作为JSON返回给客户端。
+    return DocumentProcessingJobResponse.model_validate(
+        job,
+    )
+
+@router.post(
+    "/processing-jobs/{job_id}/retry-publish",
+    response_model=DocumentProcessingJobResponse,
+)
+async def retry_publish_document_processing_job(
+    # 从URL路径中接收组织ID和任务ID。
+    organization_id: UUID,
+    job_id: UUID,
+
+    # FastAPI提供本次请求对象。
+    # 后面通过它取得应用保存的RabbitMQ连接。
+    request: Request,
+
+    # 本次请求使用的数据库Session。
+    session: AsyncSession = Depends(
+        get_db_session,
+    ),
+
+    # 验证登录身份，并要求当前用户是该组织的管理员。
+    admin_membership: OrganizationMembership = Depends(
+        require_organization_admin,
+    ),
+) -> DocumentProcessingJobResponse:
+    """
+    重新发送指定文档处理任务的消息。
+
+    只有pending任务会重新发送。
+    其他状态直接返回当前任务信息。
+    使用原任务ID，不创建新的任务记录。
+    """
+
+    service = DocumentProcessingJobService(
+        session=session,
+    )
+
+    # 使用lifespan启动时建立的RabbitMQ连接。
+    connection = request.app.state.rabbitmq_connection
+
+    # 检查权限和任务状态，必要时重新发送消息。
+    job = await service.retry_publish_job(
+        organization_id=organization_id,
+        job_id=job_id,
+        current_user_id=admin_membership.user_id,
+        connection=connection,
+    )
+
+    # 将任务ORM对象转换成JSON响应所需的模型。
+    return DocumentProcessingJobResponse.model_validate(
+        job,
     )

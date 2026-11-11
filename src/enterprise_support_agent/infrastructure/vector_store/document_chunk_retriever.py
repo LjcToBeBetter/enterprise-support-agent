@@ -32,7 +32,14 @@ from enterprise_support_agent.infrastructure.vector_store.collection_manager imp
 from enterprise_support_agent.infrastructure.vector_store.qd_client import (
     qdrant_client,
 )
+from enterprise_support_agent.infrastructure.cache.query_embedding_cache import (
+    QueryEmbeddingCache,
+)
+import logging
 
+
+# 取得本模块的日志记录器，用来观察缓存是否被复用。
+logger = logging.getLogger(__name__)
 
 @dataclass(
     frozen=True,
@@ -52,14 +59,19 @@ class VectorSearchHit:
 class DocumentChunkRetriever:
     """负责从Qdrant召回相似文本块。"""
 
-    def __init__(self) -> None:
-        """创建文本块向量检索器。"""
+    def __init__(
+            self,
+            query_cache: QueryEmbeddingCache | None = None,
+    ) -> None:
+        """创建检索器，可以选择传入问题向量缓存。"""
 
-        # 用于确保检索需要的Collection已经存在。
+        # 传入缓存对象：先查缓存，再决定是否调用Embedding。
+        # 没有传入：保持原来的流程，直接调用Embedding。
+        self.query_cache = query_cache
+
         self.collection_manager = (
             QdrantCollectionManager()
         )
-
     async def search(
         self,
         organization_id: UUID,
@@ -112,23 +124,55 @@ class DocumentChunkRetriever:
             .ensure_document_chunks_collection()
         )
 
-        # aembed_query()专门把一条用户问题转换成向量。
-        query_vector = (
-            await embedding_model.aembed_query(
-                normalized_query
-            )
-        )
+        # 先假定还没有取得问题向量。
+        query_vector = None
+        cache_key = None
 
-        # 检查Embedding模型返回的维度是否正确。
-        if (
-            len(query_vector)
-            != settings.qdrant_vector_size
-        ):
-            raise RuntimeError(
-                "问题向量维度不匹配："
-                f"实际为{len(query_vector)}，"
-                f"配置为{settings.qdrant_vector_size}"
+        if self.query_cache is not None:
+            # 根据组织、模型和问题，找到本次应该使用的缓存键。
+            cache_key = self.query_cache.build_key(
+                organization_id=organization_id,
+                query=normalized_query,
             )
+
+            # 尝试读取之前保存的问题向量。
+            # 缓存不存在、损坏或Redis不可用时，返回None。
+            query_vector = await self.query_cache.get_vector(
+                key=cache_key,
+            )
+
+        if query_vector is None:
+            # 没有取得可用缓存，这次需要调用Embedding。
+            logger.info("未取得缓存向量，调用Embedding生成")
+
+            query_vector = await embedding_model.aembed_query(
+                normalized_query,
+            )
+
+            # 先确认新向量的维度正确，
+            # 再缓存，避免保存错误的模型结果。
+            if len(query_vector) != settings.qdrant_vector_size:
+                raise RuntimeError(
+                    "问题向量维度不匹配："
+                    f"实际为{len(query_vector)}，"
+                    f"配置为{settings.qdrant_vector_size}"
+                )
+
+            if (
+                    self.query_cache is not None
+                    and cache_key is not None
+            ):
+                # 保存新生成的向量，
+                # 下次同一组织问相同问题时可以复用。
+                await self.query_cache.set_vector(
+                    key=cache_key,
+                    vector=query_vector,
+                )
+
+        else:
+            # 已经从Redis取到了问题向量，
+            # 这次可以直接复用，不需要再调用Embedding。
+            logger.info("问题向量缓存命中，复用已有向量")
 
         # query_points()向Qdrant发送问题向量，
         # 查找距离最近的Point。

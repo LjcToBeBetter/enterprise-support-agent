@@ -43,6 +43,7 @@ from enterprise_support_agent.application.exceptions import (
     UnsupportedDocumentTypeError,
     AgentConversationNotFoundError,
     AgentConversationConflictError,
+    DocumentProcessingJobNotFoundError,
 )
 from enterprise_support_agent.application.citation_validator import (
     InvalidCitationError,
@@ -872,6 +873,43 @@ def register_exception_handlers(app: FastAPI) -> None:
                 "X-Request-ID": request_id,
             },
         )
+
+    # 告诉FastAPI：遇到这个异常时，
+    # 调用下面的方法生成HTTP错误响应。
+    @app.exception_handler(
+        DocumentProcessingJobNotFoundError
+    )
+    async def handle_document_processing_job_not_found(
+        request: Request,
+        exc: DocumentProcessingJobNotFoundError,
+    ) -> JSONResponse:
+        """将任务不存在异常转换成统一的404响应。"""
+
+        # 取得中间件为本次请求生成的编号。
+        # request和exc都由FastAPI自动传入。
+        request_id = getattr(
+            request.state,
+            "request_id",
+            "unknown",
+        )
+
+        # 使用项目统一的错误响应格式。
+        error = ErrorResponse(
+            code=exc.error_code,
+            message=exc.message,
+            request_id=request_id,
+        )
+
+        # model_dump()把Pydantic对象转成字典；
+        # JSONResponse再将字典作为JSON响应发送给客户端。
+        return JSONResponse(
+            status_code=404,
+            content=error.model_dump(),
+            headers={
+                "X-Request-ID": request_id,
+            },
+        )
+
 
     # 接住前面没有处理掉的普通程序错误。前面的注解是HTTPException,所以不会处理其他的异常
     @app.exception_handler(Exception)

@@ -62,6 +62,10 @@ from enterprise_support_agent.api.agent_approval_schemas import (
     PendingTicketApprovalResponse,
     TicketApprovalDecisionRequest,
 )
+from enterprise_support_agent.api.rate_limit_dependencies import (
+    require_agent_rate_limit,
+)
+
 
 # 当前文件中所有接口的公共路径和Swagger分组。
 router = APIRouter(
@@ -77,6 +81,16 @@ router = APIRouter(
     "/chat",
     response_model=AgentResponse,
     summary="企业支持Agent问答",
+
+    # 执行接口函数之前，先检查这个用户的请求次数。
+    # 未超限：继续执行接口。
+    # 已超限：直接返回429，不执行下面的Agent逻辑。
+    #
+    # 这里只需要检查通过，不需要接收返回值，
+    # 所以把依赖放在装饰器的dependencies列表中。
+    dependencies=[
+        Depends(require_agent_rate_limit),
+    ],
 )
 async def chat_with_agent(
     # 从URL路径读取组织ID。

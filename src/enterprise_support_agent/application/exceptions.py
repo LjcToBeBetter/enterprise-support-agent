@@ -447,3 +447,22 @@ class AgentConversationConflictError(ApplicationError):
     """会话正在执行，或存在尚未完成的任务。"""
 
     error_code = "AGENT_CONVERSATION_CONFLICT"
+
+
+class DocumentProcessingJobNotFoundError(ApplicationError):
+    """在当前组织中找不到指定的文档处理任务。"""
+
+    # 前端可以根据这个错误编码识别错误类型。
+    error_code = "DOCUMENT_PROCESSING_JOB_NOT_FOUND"
+
+    def __init__(
+        self,
+        job_id: UUID,
+    ) -> None:
+        # 保存查询失败的任务ID。
+        self.job_id = job_id
+
+        # 将错误说明交给父类保存。
+        super().__init__(
+            f"文档处理任务不存在：{job_id}"
+        )

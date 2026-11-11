@@ -301,6 +301,21 @@ class Settings(BaseSettings):
         gt=0,
     )
 
+    # Redis运行在Docker中，Python通过本机映射的端口连接它。
+    redis_host: str = "127.0.0.1"
+
+    # Redis接收客户端命令的端口。
+    redis_port: int = Field(default=6379, ge=1, le=65535)
+
+    # Redis内部的逻辑数据库编号，从0开始。
+    # 它不是PostgreSQL的数据库名，也不是一张表。
+    # 当前缓存和限流功能先使用编号0。
+    redis_db: int = Field(default=0, ge=0)
+
+    # 建立连接以及等待Redis命令响应的超时时间，单位是秒。
+    # 后面的客户端会把这个配置用于两种等待。
+    redis_timeout_seconds: float = Field(default=5.0, gt=0)
+
 
 # 创建配置对象：读取配置、转换类型并执行校验。
 settings = Settings()

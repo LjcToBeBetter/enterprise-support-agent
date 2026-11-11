@@ -41,6 +41,12 @@ from enterprise_support_agent.infrastructure.database.models.document_chunk impo
 from enterprise_support_agent.infrastructure.database.models.agent_conversation import (
     AgentConversation,
 )
+# 导入任务模型，让SQLAlchemy把表结构登记到Base.metadata。
+# Alembic才能读取到这张新表的定义。
+from enterprise_support_agent.infrastructure.database.models.document_processing_job import (
+    DocumentProcessingJob,
+)
+
 # __all__表示：
 # 当外部模块从当前models包导入内容时，
 # 这些是当前包明确对外提供的模型名称。
@@ -54,4 +60,5 @@ __all__ = [
     "KnowledgeDocument",
     "DocumentChunk",
     "AgentConversation",
+    "DocumentProcessingJob"
 ]

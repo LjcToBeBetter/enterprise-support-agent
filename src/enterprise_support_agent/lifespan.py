@@ -28,6 +28,13 @@ from enterprise_support_agent.infrastructure.storage.object_storage import objec
 from enterprise_support_agent.infrastructure.checkpoint.client import (
     open_checkpointer,
 )
+from enterprise_support_agent.infrastructure.messaging.rabbitmq_connection import (
+    open_rabbitmq_connection,
+)
+from enterprise_support_agent.infrastructure.cache.redis_connection import (
+    open_redis_connection,
+)
+
 
 # getLogger 返回日志记录器对象。
 # __name__ 是当前模块名称：
@@ -63,7 +70,19 @@ async def lifespan(
     # 退出时：
     # open_checkpointer()继续执行清理，
     # 关闭连接池。
-    async with open_checkpointer() as checkpointer:
+    # 同时管理两个资源：
+    # 先打开Checkpoint连接池，再建立RabbitMQ连接。
+    # 退出时按照相反顺序，自动关闭它们。
+    async with (
+        open_checkpointer() as checkpointer,
+        open_rabbitmq_connection(
+            connection_name="enterprise-support-api",
+        ) as rabbitmq_connection,
+
+        # 调用上一步定义的方法。
+        # 创建客户端、检查连接，并取得yield提供的客户端对象。
+        open_redis_connection() as redis_client,
+    ):
         # app.state是FastAPI应用的共享存储位置。
         #
         # 将AsyncPostgresSaver对象放在这里，
@@ -72,6 +91,18 @@ async def lifespan(
         # 这里保存的是运行时对象，
         # 不是把Checkpoint保存到了app.state。
         app.state.checkpointer = checkpointer
+
+        # 保存连接对象的引用，让后面的接口能够取得并复用。
+        # 真正的任务消息保存在RabbitMQ队列中。
+        app.state.rabbitmq_connection = rabbitmq_connection
+
+        # 保存Redis客户端的引用，供后面的接口复用。
+        # 缓存数据保存在Redis服务中，这里只是保存客户端对象。
+        app.state.redis_client = redis_client
+
+        logger.info("Redis连接已就绪")
+
+        logger.info("RabbitMQ连接已就绪")
 
         logger.info(
             "Checkpoint数据库连接池已就绪"
@@ -88,6 +119,14 @@ async def lifespan(
             # 后端关闭时，先移除共享对象的引用，
             # 避免继续从app.state取得它。
             del app.state.checkpointer
+
+            # 移除应用中保存的连接引用。
+            # 连接本身由退出async with时自动关闭。
+            del app.state.rabbitmq_connection
+
+            # 移除Redis客户端的共享引用。
+            # 客户端及连接池由退出async with时自动关闭。
+            del app.state.redis_client
 
             logger.info(
                 "服务关闭：%s",

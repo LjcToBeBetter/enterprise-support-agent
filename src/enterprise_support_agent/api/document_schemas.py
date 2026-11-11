@@ -23,7 +23,10 @@ from pydantic import (
 from enterprise_support_agent.application.document_enums import (
     DocumentStatus,
 )
-
+from enterprise_support_agent.application.document_enums import (
+    DocumentJobStatus,
+    DocumentStatus,
+)
 
 class DocumentResponse(BaseModel):
     """单个知识库文档的响应格式。"""
@@ -85,3 +88,50 @@ class DocumentListResponse(BaseModel):
 
     # 总页数。
     total_pages: int
+
+
+class DocumentProcessingJobResponse(BaseModel):
+    """返回一次文档处理任务的信息，供前端展示进度和结果。"""
+
+    # 允许直接从DocumentProcessingJob ORM对象读取属性。
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
+    # 任务ID，对应RabbitMQ消息中的job_id。
+    id: UUID
+
+    # 任务所属组织。
+    organization_id: UUID
+
+    # 本次任务处理的文档。
+    document_id: UUID
+
+    # 本次任务处理的文档版本。
+    document_version: int
+
+    # 提交任务的用户。
+    requested_by_user_id: UUID
+
+    # 任务状态：pending、queued、running、
+    # succeeded或failed。
+    status: DocumentJobStatus
+
+    # 已经开始执行了多少次。
+    attempt_count: int
+
+    # 最多允许执行多少次，包含首次执行。
+    max_attempts: int
+
+    # 失败原因，正常情况下可以为空。
+    error_message: str | None
+
+    # 第一次开始执行的时间，尚未开始时为空。
+    started_at: datetime | None
+
+    # 最终结束的时间，尚未结束时为空。
+    finished_at: datetime | None
+
+    # 任务记录的创建时间和最后更新时间。
+    created_at: datetime
+    updated_at: datetime

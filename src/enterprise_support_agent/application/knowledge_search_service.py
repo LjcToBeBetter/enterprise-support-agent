@@ -25,6 +25,10 @@ from enterprise_support_agent.infrastructure.reranking.dashscope_reranker import
     DashScopeReranker,
     RerankServiceError,
 )
+from enterprise_support_agent.infrastructure.cache.query_embedding_cache import (
+    QueryEmbeddingCache,
+)
+
 
 logger = logging.getLogger(
     __name__
@@ -74,20 +78,22 @@ class KnowledgeSearchService:
     def __init__(
         self,
         session: AsyncSession,
+        query_cache: QueryEmbeddingCache | None = None,
     ) -> None:
-        """创建知识库检索服务。"""
+        """创建检索服务，并将可选的缓存传给混合检索器。"""
 
-        # Repository负责从PostgreSQL读取文本块正文。
-        self.document_chunk_repository = (
-            DocumentChunkRepository(
-                session=session
-            )
+        # 用数据库Session查询文本块正文。
+        self.document_chunk_repository = DocumentChunkRepository(
+            session=session,
         )
 
-        # 负责执行向量检索、BM25检索和RRF融合。
-        self.hybrid_retriever = HybridRetriever()
+        # 收到缓存对象后，继续向下传递，
+        # 最终由向量检索器读取和保存问题向量。
+        self.hybrid_retriever = HybridRetriever(
+            query_cache=query_cache,
+        )
 
-        # 负责对RRF候选文本进行第二次精确排序。
+        # Rerank仍然正常执行，对本次检索结果重新排序。
         self.reranker = DashScopeReranker()
 
     async def search(

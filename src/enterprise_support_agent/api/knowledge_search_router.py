@@ -13,6 +13,7 @@ from uuid import UUID
 from fastapi import (
     APIRouter,
     Depends,
+    Request
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,7 +34,9 @@ from enterprise_support_agent.infrastructure.database.models.organization_member
 from enterprise_support_agent.infrastructure.database.session import (
     get_db_session,
 )
-
+from enterprise_support_agent.infrastructure.cache.query_embedding_cache import (
+    QueryEmbeddingCache,
+)
 
 # 当前文件中所有接口的公共路径和Swagger分组。
 router = APIRouter(
@@ -57,6 +60,10 @@ async def search_knowledge(
     # 并使用KnowledgeSearchRequest进行校验。
     request_data: KnowledgeSearchRequest,
 
+    # FastAPI自动提供本次HTTP请求，
+    # 通过它取得app.state中保存的Redis客户端。
+    request: Request,
+
     # 当前请求使用的异步数据库Session。
     session: AsyncSession = Depends(
         get_db_session
@@ -74,10 +81,21 @@ async def search_knowledge(
 ) -> KnowledgeSearchResponse:
     """检索当前组织知识库中的相关文本块。"""
 
-    service = KnowledgeSearchService(
-        session=session
+    # 取得应用启动时创建的Redis客户端。
+    # 这里只复用已有客户端，不重新建立一套连接。
+    redis_client = request.app.state.redis_client
+
+    # 创建缓存操作对象，用它读取、保存问题向量。
+    query_cache = QueryEmbeddingCache(
+        client=redis_client,
     )
 
+    # 将缓存对象传给检索服务，
+    # 再由它逐层传给向量检索器。
+    service = KnowledgeSearchService(
+        session=session,
+        query_cache=query_cache,
+    )
 
     # 完整检索流程：
     #

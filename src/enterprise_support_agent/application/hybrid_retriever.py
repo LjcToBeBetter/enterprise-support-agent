@@ -19,7 +19,9 @@ from enterprise_support_agent.infrastructure.vector_store.document_chunk_bm25_re
 from enterprise_support_agent.infrastructure.vector_store.document_chunk_retriever import (
     DocumentChunkRetriever,
 )
-
+from enterprise_support_agent.infrastructure.cache.query_embedding_cache import (
+    QueryEmbeddingCache,
+)
 
 @dataclass(
     frozen=True,
@@ -61,15 +63,20 @@ class _FusionCandidate:
 class HybridRetriever:
     """并发执行两路召回并使用加权RRF融合结果。"""
 
-    def __init__(self) -> None:
-        """创建混合检索器。"""
+    def __init__(
+            self,
+            query_cache: QueryEmbeddingCache | None = None,
+    ) -> None:
+        """创建混合检索器，把可选的缓存交给向量检索器。"""
 
-        self.vector_retriever = (
-            DocumentChunkRetriever()
+        # 向量检索需要把问题转换成向量，
+        # 所以把缓存对象交给它，用于复用问题向量。
+        self.vector_retriever = DocumentChunkRetriever(
+            query_cache=query_cache,
         )
-        self.bm25_retriever = (
-            DocumentChunkBm25Retriever()
-        )
+
+        # BM25按关键词检索，不需要问题向量缓存。
+        self.bm25_retriever = DocumentChunkBm25Retriever()
 
     async def search(
         self,
