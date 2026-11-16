@@ -1,0 +1,842 @@
+[
+  {
+    "id": "TEST001",
+    "query": "R2002和R2003分别对应Redis的什么问题？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 1
+      }
+    ],
+    "topic": "REDIS",
+    "category": "故障码",
+    "expected_answer": "R2002为缓存内容不可用，R2003为限流计数异常。",
+    "evidence": "R2002表示缓存内容不可用，R2003表示限流计数异常"
+  },
+  {
+    "id": "TEST002",
+    "query": "Redis连接不可达时，怎样先区分是缓存命令失败还是PostgreSQL查询失败？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 1
+      }
+    ],
+    "topic": "REDIS",
+    "category": "场景排查",
+    "expected_answer": "记录依赖名称，确认错误发生在Redis连接、GET、SET或计数命令阶段。",
+    "evidence": "确认失败发生在Redis连接、GET、SET或计数命令阶段，而不是PostgreSQL查询阶段"
+  },
+  {
+    "id": "TEST003",
+    "query": "Windows应用连接本模拟平台的Redis，端口应该填6379还是5432？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 1
+      }
+    ],
+    "topic": "REDIS",
+    "category": "相似故障区分",
+    "expected_answer": "应为127.0.0.1:6379；5432是PostgreSQL端口。",
+    "evidence": "Windows应用通过127.0.0.1:6379访问Redis容器"
+  },
+  {
+    "id": "TEST004",
+    "query": "缓存服务已经回了PONG，能否据此认定应用的读写流程都正常？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 1
+      }
+     ],
+    "topic": "REDIS",
+    "category": "换种说法",
+    "expected_answer": "不能，还需用独立测试键验证写入、读取和数据库编号。",
+    "evidence": "PING成功只能说明该连接可以响应，仍需执行一组独立测试键的写入和读取"
+  },
+  {
+    "id": "TEST005",
+    "query": "排查Redis连接时，为什么在容器里面测127.0.0.1，不能直接证明宿主机应用能访问Redis？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 1
+      }
+    ],
+    "topic": "REDIS",
+    "category": "场景排查",
+    "expected_answer": "容器内127.0.0.1指向容器自身，应从应用实际运行环境检查。",
+    "evidence": "容器内部的127.0.0.1指向容器自身"
+  },
+  {
+    "id": "TEST006",
+    "query": "问题向量缓存键末尾的SHA-256值，究竟是Embedding向量还是文字摘要？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 2
+      }
+    ],
+    "topic": "REDIS",
+    "category": "概念区分",
+    "expected_answer": "都不是，它用于构造固定长度的缓存键名。",
+    "evidence": "SHA-256哈希值用于生成固定长度的键名，不是问题向量，也不是大模型生成的文字摘要"
+  },
+  {
+    "id": "TEST007",
+    "query": "从Redis取到的问题向量JSON包含NaN、无穷数或维度不对，应继续拿来检索吗？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 2
+      }
+    ],
+    "topic": "REDIS",
+    "category": "场景排查",
+    "expected_answer": "不能；缓存无效时重新调用Embedding生成向量。",
+    "evidence": "校验向量维度并拒绝NaN和无穷数"
+  },
+  {
+    "id": "TEST008",
+    "query": "用户问题相同，但换了Embedding模型或向量维度，应该复用原来的缓存键吗？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 2
+      }
+    ],
+    "topic": "REDIS",
+    "category": "配置变化",
+    "expected_answer": "不应复用；模型和维度参与缓存键计算，变化后键会改变。",
+    "evidence": "模型或维度变化会改变键"
+  },
+  {
+    "id": "TEST009",
+    "query": "问题向量已生成成功，但是Redis写入失败，本次知识检索是否必须终止？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 2
+      }
+    ],
+    "topic": "REDIS",
+    "category": "失败处理",
+    "expected_answer": "不必终止；记录缓存写入错误，继续使用有效向量检索。",
+    "evidence": "缓存写入失败应记录日志，已经取得的有效向量仍可继续用于检索"
+  },
+  {
+    "id": "TEST010",
+    "query": "缓存命中了问题向量后，是不是直接返回上次的文本块，不再查Qdrant和Rerank？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 2
+      }
+    ],
+    "topic": "REDIS",
+    "category": "概念区分",
+    "expected_answer": "不是；只复用问题向量，仍查询Qdrant、读取当前文本块并执行Rerank。",
+    "evidence": "这里缓存的是问题向量，后续仍会查询Qdrant、读取当前文本块并执行Rerank"
+  },
+  {
+    "id": "TEST011",
+    "query": "Agent限流计数按全站共享，还是按组织和用户分别统计？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 3
+      }
+    ],
+    "topic": "REDIS",
+    "category": "隔离规则",
+    "expected_answer": "使用rate_limit:agent:组织ID:用户ID，分别计数。",
+    "evidence": "Agent问答按rate_limit:agent:组织ID:用户ID分别计数"
+  },
+  {
+    "id": "TEST012",
+    "query": "限流代码用EXPIRE NX，是不是每来一个请求就把60秒重新开始算？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 3
+      }
+    ],
+    "topic": "REDIS",
+    "category": "场景排查",
+    "expected_answer": "不是；只在尚无有效期时设置，后续请求不推迟倒计时。",
+    "evidence": "NX要求只在计数尚未设置有效期时设置，后续请求增加计数但不推迟倒计时"
+  },
+  {
+    "id": "TEST013",
+    "query": "本模拟Agent在同一60秒窗口收到第21次问答时，应返回什么状态和等待提示？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 3
+      }
+    ],
+    "topic": "REDIS",
+    "category": "数值规则",
+    "expected_answer": "HTTP 429，并通过Retry-After提示等待秒数。",
+    "evidence": "第21次起返回HTTP 429，并在Retry-After响应头中给出建议等待秒数"
+  },
+  {
+    "id": "TEST014",
+    "query": "为什么用户被限流后，等窗口结束再次请求就能通过？计数会怎么变化？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 3
+      }
+    ],
+    "topic": "REDIS",
+    "category": "换种说法",
+    "expected_answer": "计数键到期失效，下一次INCR重新从一开始。",
+    "evidence": "60秒到期后计数键失效，下次请求重新从一计数"
+  },
+  {
+    "id": "TEST015",
+    "query": "Redis不可用，导致Agent限流检查无法完成时，本模拟方案返回什么状态码？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 3
+      }
+    ],
+    "topic": "REDIS",
+    "category": "失败处理",
+    "expected_answer": "返回503。",
+    "evidence": "限流检查依赖Redis，无法检查时本方案返回503"
+  },
+  {
+    "id": "TEST016",
+    "query": "RabbitMQ的Ready消息持续增加，应该先检查什么，而不是只看数据库SQL性能？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 1
+      }
+    ],
+    "topic": "MQ",
+    "category": "场景排查",
+    "expected_answer": "先检查Worker是否运行和消费者数量。",
+    "evidence": "Ready持续增长时，先检查Worker是否运行以及消费者数量"
+  },
+  {
+    "id": "TEST017",
+    "query": "RabbitMQ管理页面15672可以打开，能证明应用连接5672及消息路由都正确吗？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 1
+      }
+    ],
+    "topic": "MQ",
+    "category": "相似故障区分",
+    "expected_answer": "不能；还需检查应用账号、virtual host和路由。",
+    "evidence": "管理页面可访问，不代表应用连接账号、逻辑分区或消息路由一定正确"
+  },
+  {
+    "id": "TEST018",
+    "query": "本模拟文档任务的DIRECT交换机、队列和路由键分别叫什么？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 1
+      }
+    ],
+    "topic": "MQ",
+    "category": "精确字段",
+    "expected_answer": "enterprise.document.tasks、enterprise.document.process、document.process。",
+    "evidence": "DIRECT交换机enterprise.document.tasks，队列enterprise.document.process，以及路由键document.process"
+  },
+  {
+    "id": "TEST019",
+    "query": "RabbitMQ里的文档消息是否直接保存PDF字节或Python处理函数？消息携带哪些信息？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 1
+      }
+    ],
+    "topic": "MQ",
+    "category": "概念区分",
+    "expected_answer": "消息只携带任务ID、组织ID、文档ID和版本，不保存原文件。",
+    "evidence": "文档原文件不放在消息中，消息只携带任务ID、组织ID、文档ID和版本"
+  },
+  {
+    "id": "TEST020",
+    "query": "队列Ready降下来了，但Unacked一直不降，能说PDF已经切分和向量化成功了吗？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 1
+      }
+    ],
+    "topic": "MQ",
+    "category": "换种说法",
+    "expected_answer": "不能；消息已交给消费者但未确认，应检查解析、Embedding、Qdrant和续期。",
+    "evidence": "Unacked持续不下降时，结合任务ID检查正在执行的PDF解析、Embedding、Qdrant写入和租约续期"
+  },
+  {
+    "id": "TEST021",
+    "query": "Worker正常处理完文档后，是先ACK消息，还是先提交任务succeeded状态？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 2
+      }
+    ],
+    "topic": "MQ",
+    "category": "执行顺序",
+    "expected_answer": "先处理成功并提交succeeded，再ACK消息。",
+    "evidence": "成功处理并提交succeeded状态后，Worker发送ACK"
+  },
+  {
+    "id": "TEST022",
+    "query": "文档任务最多执行3次，第一次失败后还能重试几次，消息怎样重新排队？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 2
+      }
+    ],
+    "topic": "MQ",
+    "category": "数值规则",
+    "expected_answer": "最多再试2次；先改queued，再NACK且requeue=True。",
+    "evidence": "本方案最多执行3次，包含首次执行，因此首次失败后最多再尝试2次"
+  },
+  {
+    "id": "TEST023",
+    "query": "文档任务尝试次数耗尽后，失败消息放到哪里，原消息什么时候ACK？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 2
+      }
+    ],
+    "topic": "MQ",
+    "category": "失败处理",
+    "expected_answer": "复制到enterprise.document.process.failed，收到发布确认后再ACK原消息。",
+    "evidence": "先把原消息复制到enterprise.document.process.failed队列，等待发布确认成功后，再ACK原消息"
+  },
+  {
+    "id": "TEST024",
+    "query": "RabbitMQ消息的message_id设成任务ID，Broker就一定会自动去重吗？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 2
+      }
+    ],
+    "topic": "MQ",
+    "category": "概念区分",
+    "expected_answer": "不会；该ID用于追踪，不自动保证去重。",
+    "evidence": "message_id设置为任务ID便于追踪，但它不会自动让所有消息去重"
+  },
+  {
+    "id": "TEST025",
+    "query": "Worker收到队列消息以后，为什么还要用组织ID和任务ID查询PostgreSQL？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 2
+      }
+    ],
+    "topic": "MQ",
+    "category": "数据流",
+    "expected_answer": "读取正式任务记录，核对文档和版本，再取得执行资格。",
+    "evidence": "Worker先解析消息，再根据组织ID和任务ID查询PostgreSQL任务记录，核对文档ID和版本"
+  },
+  {
+    "id": "TEST026",
+    "query": "文档处理租约有效期、正常续期间隔，以及有效租约的重新检查间隔分别是多少？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 3
+      }
+    ],
+    "topic": "MQ",
+    "category": "数值规则",
+    "expected_answer": "分别为120秒、30秒和5秒。",
+    "evidence": "租约有效期为120秒，正常执行时每隔30秒续期。新Worker遇到有效租约时保留消息，每隔5秒重新检查"
+  },
+  {
+    "id": "TEST027",
+    "query": "同一个文档任务每次重试，job_id和execution_token分别标识什么？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 3
+      }
+    ],
+    "topic": "MQ",
+    "category": "概念区分",
+    "expected_answer": "job_id标识任务；execution_token标识某一次执行尝试。",
+    "evidence": "job_id标识任务本身，execution_token标识其中某一次尝试"
+  },
+  {
+    "id": "TEST028",
+    "query": "另一个Worker看到任务仍为running但租约尚未过期，应立即抢占或反复NACK吗？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 3
+      }
+    ],
+    "topic": "MQ",
+    "category": "并发场景",
+    "expected_answer": "不应；保留消息，每隔5秒检查，避免抢占正常执行任务。",
+    "evidence": "新Worker遇到有效租约时保留消息，每隔5秒重新检查，不反复NACK"
+  },
+  {
+    "id": "TEST029",
+    "query": "文档任务租约过期，但3次执行额度已经用完，新Worker应再开始第四次吗？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 3
+      }
+    ],
+    "topic": "MQ",
+    "category": "终止条件",
+    "expected_answer": "不应；记录failed和结束时间，不再执行。",
+    "evidence": "租约过期且次数已经耗尽时，直接记录failed和结束时间，不开始第四次执行"
+  },
+  {
+    "id": "TEST030",
+    "query": "旧Worker恢复运行后，怎样避免它把新一轮文档任务的结果覆盖掉？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 3
+      }
+    ],
+    "topic": "MQ",
+    "category": "并发场景",
+    "expected_answer": "保存结果的UPDATE条件核对当前执行编号。",
+    "evidence": "保存成功或失败结果时，UPDATE条件应核对执行编号，旧Worker不能覆盖新一轮任务的状态"
+  },
+  {
+    "id": "TEST031",
+    "query": "对象存储S4001和S4002分别表示什么，原PDF和文档元数据存在哪儿？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 1
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "故障码",
+    "expected_answer": "S4001连接失败，S4002对象不存在；PDF在RustFS，元数据在PostgreSQL。",
+    "evidence": "S4001表示对象存储连接失败，S4002表示文件对象不存在"
+  },
+  {
+    "id": "TEST032",
+    "query": "boto3访问本模拟RustFS应该连9000还是9001？它按什么协议发送请求？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 1
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "精确字段",
+    "expected_answer": "连接9000，使用S3兼容协议；9001是管理页面。",
+    "evidence": "9000是RustFS接收S3程序请求的入口，9001是管理页面"
+  },
+  {
+    "id": "TEST033",
+    "query": "对象存储里已经知道manual.pdf这个文件名，下载时是否还需要Bucket和完整object_key？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 1
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "场景排查",
+    "expected_answer": "需要同时知道Bucket和完整object_key，只有文件名不足以定位。",
+    "evidence": "下载时必须同时知道Bucket和完整object_key"
+  },
+  {
+    "id": "TEST034",
+    "query": "object_key里的organizations/组织ID/documents/文档ID/，是不是服务器上真实的文件夹？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 1
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "概念区分",
+    "expected_answer": "它是对象键前缀，用于组织键名，不等同于操作系统目录。",
+    "evidence": "斜杠前缀用于组织键名，并帮助区分组织和文档，不应将它等同于操作系统目录"
+  },
+  {
+    "id": "TEST035",
+    "query": "RustFS网页后台能登录，但Python上传文件仍失败，应该核对哪些连接和权限配置？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 1
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "换种说法",
+    "expected_answer": "检查endpoint、端口、容器与网络，再检查凭据和Bucket权限。",
+    "evidence": "先核对endpoint地址、端口、容器状态和网络路径，再检查访问账号、密码及对应Bucket权限"
+  },
+  {
+    "id": "TEST036",
+    "query": "本模拟知识库单个上传文件最多20MiB，换成字节应该怎么算？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 2
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "数值规则",
+    "expected_answer": "20×1024×1024，即20971520字节。",
+    "evidence": "单文件上传上限为20MiB，即20乘1024乘1024字节"
+  },
+  {
+    "id": "TEST037",
+    "query": "同一组织把同一个PDF改名后再次上传，为什么仍可能被判成重复文件？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 2
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "场景排查",
+    "expected_answer": "重复检查基于原始字节的SHA-256，而不只看文件名。",
+    "evidence": "相同文件内容用于检查同一组织内的重复上传；不同文件名不意味着文件内容不同"
+  },
+  {
+    "id": "TEST038",
+    "query": "两份PDF肉眼文字相近，但重新导出后SHA-256不同，是否能用这个哈希判断语义相似度？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 2
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "概念区分",
+    "expected_answer": "不能；哈希针对原始字节，重新导出可能改变字节。",
+    "evidence": "因此不能把文件哈希当作语义相似度"
+  },
+  {
+    "id": "TEST039",
+    "query": "PDF已成功上传RustFS，但文档记录提交PostgreSQL失败，rollback会把文件也删除吗？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 2
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "失败处理",
+    "expected_answer": "不会；跨系统并非同一本地事务，需要记录对象键并安排补偿清理。",
+    "evidence": "数据库rollback不能自动撤回已完成的S3上传"
+  },
+  {
+    "id": "TEST040",
+    "query": "异步上传接口为什么用asyncio.to_thread执行boto3同步操作？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 2
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "执行方式",
+    "expected_answer": "把同步I/O放在线程中，避免阻塞事件循环。",
+    "evidence": "boto3的同步文件操作可通过asyncio.to_thread放到线程中执行，避免直接占住异步接口的事件循环"
+  },
+  {
+    "id": "TEST041",
+    "query": "下载PDF时response_body.read()只把内容放进变量，浏览器怎么最终拿到文件？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 3
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "数据流",
+    "expected_answer": "read返回bytes，后端写入HTTP响应体，浏览器接收并决定保存位置。",
+    "evidence": "response_body.read()返回文件bytes，后端将这些字节放入HTTP响应体交给浏览器"
+  },
+  {
+    "id": "TEST042",
+    "query": "PDF下载时，哪个HTTP响应头声明附件文件名，中文名称可用什么编码格式？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 3
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "精确字段",
+    "expected_answer": "Content-Disposition，中文可使用UTF-8的filename*格式。",
+    "evidence": "下载响应中的Content-Disposition用于声明附件和文件名"
+  },
+  {
+    "id": "TEST043",
+    "query": "如何确认下载到本机的PDF字节与上传时相同，而不只看文件名？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 3
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "完整性校验",
+    "expected_answer": "计算下载字节的SHA-256，与上传时记录比较。",
+    "evidence": "将下载字节的SHA-256与上传时记录比较"
+  },
+  {
+    "id": "TEST044",
+    "query": "PDF原文中的图片能下载看到，但图片内部文字搜不到，是否说明RustFS把图片丢了？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 3
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "能力边界",
+    "expected_answer": "不是；图片随原文件保存，但图片文字需OCR或多模态识别才能检索。",
+    "evidence": "原始PDF中的图片会随文件完整保存，但图片内部文字需要OCR或多模态识别才能进入文本检索"
+  },
+  {
+    "id": "TEST045",
+    "query": "对象存储恢复后，本模拟手册要求依次验证哪些操作，观察读写错误率多久？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 3
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "恢复验收",
+    "expected_answer": "验证上传、元数据查询、下载和哈希一致性，观察8分钟。",
+    "evidence": "恢复后用独立测试文档依次验证上传、元数据查询、下载和哈希一致性。模拟运维约定观察8分钟"
+  },
+  {
+    "id": "TEST046",
+    "query": "用户登录得到access_token之后，后续受保护请求应如何携带这个JWT？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 1
+      }
+    ],
+    "topic": "AUTH",
+    "category": "精确字段",
+    "expected_answer": "放在Authorization请求头，格式为Bearer加JWT字符串。",
+    "evidence": "客户端在请求头中携带Authorization: Bearer JWT字符串"
+  },
+  {
+    "id": "TEST047",
+    "query": "在Swagger点Authorize粘贴令牌，会自动创建账号或把用户加入组织吗？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 1
+      }
+    ],
+    "topic": "AUTH",
+    "category": "概念区分",
+    "expected_answer": "不会；仅保存测试令牌并为后续请求添加认证头。",
+    "evidence": "它不是新建用户，也不是在后端创建组织成员关系"
+  },
+  {
+    "id": "TEST048",
+    "query": "接口报401，请按本手册顺序说明先检查请求头还是先延长数据库超时时间？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 1
+      }
+    ],
+    "topic": "AUTH",
+    "category": "场景排查",
+    "expected_answer": "先检查实际携带的Authorization、Bearer格式、过期时间、签名和用户可用性。",
+    "evidence": "先确认请求实际携带Authorization头，再确认Bearer格式、令牌是否过期、签名是否通过以及令牌对应的用户是否可用"
+  },
+  {
+    "id": "TEST049",
+    "query": "为了排查401，能把完整JWT、签名密钥和密码直接复制进工单吗？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 1
+      }
+    ],
+    "topic": "AUTH",
+    "category": "审计边界",
+    "expected_answer": "不能；只记录请求ID和必要的错误类别。",
+    "evidence": "不把完整JWT、签名密钥或密码复制到工单和评估报告中"
+  },
+  {
+    "id": "TEST050",
+    "query": "普通登录JWT能正常用，但MCP认证失败，为什么不能只检查签名是否有效？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 1
+      }
+    ],
+    "topic": "AUTH",
+    "category": "场景排查",
+    "expected_answer": "普通与MCP令牌可能有不同受众或权限要求。",
+    "evidence": "普通登录令牌和MCP专用令牌可能有不同的受众或权限要求"
+  },
+  {
+    "id": "TEST051",
+    "query": "JWT验证已通过，为什么访问URL中另一个组织的文档仍然可能被拒绝？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 2
+      }
+    ],
+    "topic": "AUTH",
+    "category": "场景排查",
+    "expected_answer": "登录有效不等于属于目标组织，还需检查该组织的成员关系。",
+    "evidence": "JWT验证通过说明请求者的登录身份有效，不自动代表他属于URL指定的组织"
+  },
+  {
+    "id": "TEST052",
+    "query": "require_organization_admin验证失败，是给接口传None继续执行，还是直接抛出异常？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 2
+      }
+    ],
+    "topic": "AUTH",
+    "category": "权限规则",
+    "expected_answer": "验证失败会抛异常；先验证成员关系，再检查admin角色。",
+    "evidence": "这些检查失败会抛出异常，不会给接口传入一个代表验证成功的None"
+  },
+  {
+    "id": "TEST053",
+    "query": "未登录的用户看不到操作按钮，为什么服务器还需要验证接口权限？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 2
+      }
+    ],
+    "topic": "AUTH",
+    "category": "换种说法",
+    "expected_answer": "用户可以绕过界面构造HTTP请求，权限必须在后端执行。",
+    "evidence": "用户仍可能通过脚本、HTTP客户端或直接构造请求访问接口，因此权限校验必须由后端执行"
+  },
+  {
+    "id": "TEST054",
+    "query": "知识库在Qdrant按organization_id过滤后，回查PostgreSQL文本块还需要组织条件吗？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 2
+      }
+    ],
+    "topic": "AUTH",
+    "category": "隔离规则",
+    "expected_answer": "需要；向量检索和SQL读取都应限制组织归属。",
+    "evidence": "向量检索中的organization_id过滤，与PostgreSQL读取文本块时的组织条件应同时存在"
+  },
+  {
+    "id": "TEST055",
+    "query": "本模拟平台普通成员是否能提交文档处理任务并查询任务状态，需要什么角色？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 2
+      }
+    ],
+    "topic": "AUTH",
+    "category": "权限规则",
+    "expected_answer": "这两类操作要求当前组织管理员身份。",
+    "evidence": "文档处理任务提交及状态查询要求组织管理员身份"
+  },
+  {
+    "id": "TEST056",
+    "query": "MCP_TOKEN_AUDIENCE是不是配置MCP服务器监听地址的参数？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 3
+      }
+    ],
+    "topic": "AUTH",
+    "category": "概念区分",
+    "expected_answer": "不是；它标识令牌预期受众，不负责创建监听地址。",
+    "evidence": "MCP_TOKEN_AUDIENCE标识令牌预期面向的受众，不负责创建服务器监听地址"
+  },
+  {
+    "id": "TEST057",
+    "query": "MCP专用令牌和scope都通过以后，知识库工具还要检查用户属于目标组织吗？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 3
+      }
+    ],
+    "topic": "AUTH",
+    "category": "隔离规则",
+    "expected_answer": "仍需检查组织成员关系。",
+    "evidence": "工具执行时仍应验证用户是否属于目标组织"
+  },
+  {
+    "id": "TEST058",
+    "query": "调用Agent时conversation_id直接照抄Swagger示例UUID，可以自动定位自己的会话吗？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 3
+      }
+    ],
+    "topic": "AUTH",
+    "category": "场景排查",
+    "expected_answer": "不可以；必须用已经创建且属于当前用户和组织的真实会话ID。",
+    "evidence": "conversation_id必须使用已创建且归属于当前用户和组织的会话ID，不能照抄Swagger示例"
+  },
+  {
+    "id": "TEST059",
+    "query": "Agent会话正在等创建工单审批，这时应该再次调用普通聊天，还是走审批恢复？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 3
+      }
+    ],
+    "topic": "AUTH",
+    "category": "执行流程",
+    "expected_answer": "应走审批恢复，不重复发起普通问答。",
+    "evidence": "正在等待工单审批的会话应走审批恢复流程，而不是重复提交新一轮普通问答"
+  },
+  {
+    "id": "TEST060",
+    "query": "Agent会话归属和LangGraph运行状态，是不是都只保存在前端变量里？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 3
+      }
+    ],
+    "topic": "AUTH",
+    "category": "数据流",
+    "expected_answer": "不是；归属在agent_conversations，运行状态由Checkpointer保存。",
+    "evidence": "会话归属信息保存在agent_conversations表，LangGraph执行状态由Checkpointer保存"
+  }
+]

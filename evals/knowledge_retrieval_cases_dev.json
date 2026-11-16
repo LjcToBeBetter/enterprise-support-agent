@@ -1,0 +1,170 @@
+[
+  {
+    "id": "DEV001",
+    "query": "R2001是什么故障？应该如何检查？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 1
+      }
+    ],
+    "topic": "REDIS",
+    "category": "已手动验证",
+    "expected_answer": "Redis连接不可达，检查连接与实际读写。",
+    "evidence": "R2001表示Redis连接不可达"
+  },
+  {
+    "id": "DEV002",
+    "query": "本模拟手册规定问题向量缓存有效期是多少秒？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 2
+      }
+    ],
+    "topic": "REDIS",
+    "category": "缓存配置",
+    "expected_answer": "600秒。",
+    "evidence": "问题向量缓存有效期为600秒"
+  },
+  {
+    "id": "DEV003",
+    "query": "限流恢复验收使用5秒最多2次的规则，连发3次的预期结果是什么？",
+    "relevant_sources": [
+      {
+        "document_id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+        "page_number": 3
+      }
+    ],
+    "topic": "REDIS",
+    "category": "测试配置",
+    "expected_answer": "前两次放行，第三次拦截；超过5秒后重新放行。",
+    "evidence": "预期前两次放行、第三次拦截"
+  },
+  {
+    "id": "DEV004",
+    "query": "Q3001和Q3002分别是哪两类后台文档问题？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 1
+      }
+    ],
+    "topic": "MQ",
+    "category": "故障码",
+    "expected_answer": "任务消息待投递积压、任务执行中断。",
+    "evidence": "Q3001表示任务消息待投递积压，Q3002表示任务执行中断"
+  },
+  {
+    "id": "DEV005",
+    "query": "生产者收到RabbitMQ发布确认，就等于文档处理完成了吗？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 2
+      }
+    ],
+    "topic": "MQ",
+    "category": "概念区分",
+    "expected_answer": "不是；只说明Broker接收消息。",
+    "evidence": "生产者发布确认只代表Broker接收消息，不代表Worker完成任务"
+  },
+  {
+    "id": "DEV006",
+    "query": "RabbitMQ文档任务恢复后，模拟运维约定观察积压和失败数多久？",
+    "relevant_sources": [
+      {
+        "document_id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+        "page_number": 3
+      }
+    ],
+    "topic": "MQ",
+    "category": "恢复验收",
+    "expected_answer": "12分钟。",
+    "evidence": "恢复后观察12分钟的队列积压和任务失败数"
+  },
+  {
+    "id": "DEV007",
+    "query": "原始PDF、文档元数据和检索向量分别由哪三个服务保存？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 1
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "职责区分",
+    "expected_answer": "RustFS、PostgreSQL、Qdrant。",
+    "evidence": "RustFS是保存文件内容的对象存储服务；PostgreSQL保存文档元数据；Qdrant保存用于检索的向量"
+  },
+  {
+    "id": "DEV008",
+    "query": "上传PDF后，object_key、checksum_sha256和file_size_bytes保存到哪里？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 2
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "字段位置",
+    "expected_answer": "保存到PostgreSQL文档元数据中。",
+    "evidence": "file_size_bytes、checksum_sha256和object_key等信息保存到PostgreSQL"
+  },
+  {
+    "id": "DEV009",
+    "query": "文档还处于pending，能据此断定原始PDF没有保存到对象存储吗？",
+    "relevant_sources": [
+      {
+        "document_id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+        "page_number": 3
+      }
+    ],
+    "topic": "STORAGE",
+    "category": "状态区分",
+    "expected_answer": "不能。",
+    "evidence": "不要把文档仍为pending误认为原文件没有上传"
+  },
+  {
+    "id": "DEV010",
+    "query": "A5001和A5002分别是哪两类认证或授权问题？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 1
+      }
+    ],
+    "topic": "AUTH",
+    "category": "故障码",
+    "expected_answer": "登录凭证不可用、组织访问被拒绝。",
+    "evidence": "A5001表示登录凭证不可用，A5002表示组织访问被拒绝"
+  },
+  {
+    "id": "DEV011",
+    "query": "后端鉴权时，当前用户ID应该相信前端填写的值，还是从校验过的令牌取得？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 2
+      }
+    ],
+    "topic": "AUTH",
+    "category": "身份来源",
+    "expected_answer": "从校验过的令牌对应用户取得。",
+    "evidence": "当前用户ID应来自已校验令牌对应的用户"
+  },
+  {
+    "id": "DEV012",
+    "query": "JWT访问故障恢复后，模拟手册要求观察401和403分布多久？",
+    "relevant_sources": [
+      {
+        "document_id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+        "page_number": 3
+      }
+    ],
+    "topic": "AUTH",
+    "category": "恢复验收",
+    "expected_answer": "6分钟。",
+    "evidence": "恢复后观察6分钟的401和403分布"
+  }
+]

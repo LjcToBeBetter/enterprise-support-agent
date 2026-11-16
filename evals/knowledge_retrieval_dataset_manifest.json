@@ -1,0 +1,78 @@
+{
+  "created_at": "2026-11-11",
+  "provenance": "AI-authored controlled synthetic documents and questions; not production traffic or an external benchmark",
+  "annotation_validation": "Each evidence excerpt checked against the current document version's PostgreSQL chunks at the labelled page; not a complete independent human relevance review",
+  "organization_id": "633b0933-507f-4e9d-8364-691a39b0d5cb",
+  "label_unit": "document_id + page_number",
+  "test_file": "knowledge_retrieval_cases.json",
+  "test_cases": 60,
+  "dev_file": "knowledge_retrieval_cases_dev.json",
+  "dev_cases": 12,
+  "pilot_file": "knowledge_retrieval_cases_pilot.json",
+  "overlap": "Different questions share the same four documents and twelve pages; the split is question-level, not document-level",
+  "documents": [
+    {
+      "id": "a7ac8cac-905a-4168-b519-3931f6239af0",
+      "organization_id": "633b0933-507f-4e9d-8364-691a39b0d5cb",
+      "original_filename": "KB-AUTH-005_jwt_organization_access.pdf",
+      "status": "ready",
+      "version": 1,
+      "pages": [
+        1,
+        2,
+        3
+      ],
+      "test_cases": 15,
+      "dev_cases": 3
+    },
+    {
+      "id": "c2641b57-51f0-4a24-aa4d-c364758faa47",
+      "organization_id": "633b0933-507f-4e9d-8364-691a39b0d5cb",
+      "original_filename": "KB-MQ-003_rabbitmq_document_jobs.pdf",
+      "status": "ready",
+      "version": 1,
+      "pages": [
+        1,
+        2,
+        3
+      ],
+      "test_cases": 15,
+      "dev_cases": 3
+    },
+    {
+      "id": "953c8c4b-816e-4d4d-b442-3fba347f6663",
+      "organization_id": "633b0933-507f-4e9d-8364-691a39b0d5cb",
+      "original_filename": "KB-REDIS-002_redis_connection_cache.pdf",
+      "status": "ready",
+      "version": 1,
+      "pages": [
+        1,
+        2,
+        3
+      ],
+      "test_cases": 15,
+      "dev_cases": 3
+    },
+    {
+      "id": "842e3077-6fd9-4ac7-a1f4-d803faa6f205",
+      "organization_id": "633b0933-507f-4e9d-8364-691a39b0d5cb",
+      "original_filename": "KB-STORAGE-004_object_storage_files.pdf",
+      "status": "ready",
+      "version": 1,
+      "pages": [
+        1,
+        2,
+        3
+      ],
+      "test_cases": 15,
+      "dev_cases": 3
+    }
+  ],
+  "limitations": [
+    "Only four controlled documents, not a large representative production corpus",
+    "One labelled supporting page per case; other partially relevant pages may exist",
+    "No unanswerable questions, answer-quality scoring, security test scoring, or generation accuracy measurement",
+    "Do not tune on the fixed test questions after viewing their results and still describe them as untouched holdout data",
+    "No retrieval results or improvement percentages have been measured by this generation script"
+  ]
+}

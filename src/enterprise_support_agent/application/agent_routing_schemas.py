@@ -1,30 +1,11 @@
-"""规定调度Agent返回的任务分配格式。"""
+"""兼容目录整理前保存的会话存档，不在这里定义新的业务模型。
 
-from typing import Literal
+旧Checkpoint会记录调度结果类的模块路径，反序列化时仍需导入本模块。
+新代码应使用agent.routing.agent_routing_schemas中的正式定义。
+"""
 
-from pydantic import BaseModel, ConfigDict, Field
+from enterprise_support_agent.application.agent.routing.agent_routing_schemas import (
+    AgentRoutingDecision,
+)
 
-
-class AgentRoutingDecision(BaseModel):
-    """记录本次任务应该交给哪个Agent处理。"""
-
-    model_config = ConfigDict(
-        # 禁止返回没有定义的字段。
-        extra="forbid",
-    )
-
-    # Literal限制route只能使用下面四个值。
-    # 程序后面根据这个值选择执行路线。
-    route: Literal[
-        "knowledge",
-        "ticket",
-        "knowledge_then_ticket",
-        "general",
-    ] = Field(
-        description=(
-            "knowledge：只需要检索知识库、回答知识问题；"
-            "ticket：只需要查询或申请创建工单；"
-            "knowledge_then_ticket：先查知识库，再处理工单；"
-            "general：打招呼、介绍能力，或询问用户以澄清需求"
-        ),
-    )
+__all__ = ["AgentRoutingDecision"]

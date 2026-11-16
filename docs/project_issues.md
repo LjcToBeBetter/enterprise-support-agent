@@ -38,12 +38,12 @@
 
 ### 相关代码
 
-- `src/enterprise_support_agent/application/agent_graph.py`：角色节点、条件边和交接路线。
-- `src/enterprise_support_agent/application/agent_model_node.py`：调用模型，以及知识库回答转为中间结果的逻辑。
-- `src/enterprise_support_agent/application/agent_tool_groups.py`：各角色的工具范围。
-- `src/enterprise_support_agent/application/agent_tool_agent.py`：工具查找、执行和错误结果。
-- `src/enterprise_support_agent/application/agent_routing_prompt.py`：根据当前问题和历史选择路线。
-- `src/enterprise_support_agent/application/knowledge_agent_prompt.py`、`ticket_agent_prompt.py`：角色职责与交接说明。
+- `src/enterprise_support_agent/application/agent/agent_graph.py`：角色节点、条件边和交接路线。
+- `src/enterprise_support_agent/application/agent/nodes/agent_model_node.py`：调用模型，以及知识库回答转为中间结果的逻辑。
+- `src/enterprise_support_agent/application/agent/tools/agent_tool_groups.py`：各角色的工具范围。
+- `src/enterprise_support_agent/application/agent/nodes/agent_tool_node.py`：工具查找、执行和错误结果。
+- `src/enterprise_support_agent/application/agent/prompts/agent_routing_prompt.py`：根据当前问题和历史选择路线。
+- `src/enterprise_support_agent/application/agent/prompts/knowledge_agent_prompt.py`、`ticket_agent_prompt.py`：角色职责与交接说明。
 
 ### 修复方向（尚未验证）
 

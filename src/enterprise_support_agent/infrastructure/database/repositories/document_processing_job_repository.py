@@ -8,7 +8,7 @@ from enterprise_support_agent.infrastructure.database.models.document_processing
     DocumentProcessingJob,
 )
 
-from enterprise_support_agent.application.document_enums import (
+from enterprise_support_agent.application.documents.document_enums import (
     DocumentJobStatus,
 )
 # and_要求条件同时成立；or_表示条件满足任意一组即可。

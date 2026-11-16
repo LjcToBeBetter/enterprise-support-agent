@@ -1,0 +1,52 @@
+[
+  {
+    "id": "KB001",
+    "query": "E1007错误码是什么意思？",
+    "relevant_sources": [
+      {
+        "document_id": "12287a4a-439c-417c-86b7-3911945611ed",
+        "page_number": 1
+      }
+    ]
+  },
+  {
+    "id": "KB002",
+    "query": "排查数据库连接故障时，网络链路需要检查哪些内容？",
+    "relevant_sources": [
+      {
+        "document_id": "12287a4a-439c-417c-86b7-3911945611ed",
+        "page_number": 2
+      }
+    ]
+  },
+  {
+    "id": "KB003",
+    "query": "数据库连接池需要检查哪些问题？",
+    "relevant_sources": [
+      {
+        "document_id": "12287a4a-439c-417c-86b7-3911945611ed",
+        "page_number": 2
+      }
+    ]
+  },
+  {
+    "id": "KB004",
+    "query": "数据库故障发生后，第一时间应该记录哪些信息？",
+    "relevant_sources": [
+      {
+        "document_id": "12287a4a-439c-417c-86b7-3911945611ed",
+        "page_number": 1
+      }
+    ]
+  },
+  {
+    "id": "KB005",
+    "query": "数据库恢复后，需要观察错误率和连接情况至少多长时间？",
+    "relevant_sources": [
+      {
+        "document_id": "12287a4a-439c-417c-86b7-3911945611ed",
+        "page_number": 2
+      }
+    ]
+  }
+]

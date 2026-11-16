@@ -2,10 +2,10 @@
 
 import logging
 
-from enterprise_support_agent.application.document_enums import (
+from enterprise_support_agent.application.documents.document_enums import (
     DocumentJobStatus,
 )
-from enterprise_support_agent.application.document_processing_service import (
+from enterprise_support_agent.application.documents.document_processing_service import (
     DocumentProcessingService,
 )
 from enterprise_support_agent.infrastructure.database.repositories.document_processing_job_repository import (

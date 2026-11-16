@@ -10,40 +10,40 @@
 
 from fastapi import FastAPI
 import uvicorn
-from enterprise_support_agent.api.health import router as health_router
+from enterprise_support_agent.api.common.health import router as health_router
 from enterprise_support_agent.config import settings
 from enterprise_support_agent.lifespan import lifespan
 from enterprise_support_agent.logging_config import configure_logging
 from enterprise_support_agent.request_middleware import register_request_logging
-from enterprise_support_agent.api.error_handlers import register_exception_handlers
-from enterprise_support_agent.api.organization_router import (
+from enterprise_support_agent.api.common.error_handlers import register_exception_handlers
+from enterprise_support_agent.api.organizations.organization_router import (
     router as organization_router,
 )
-from enterprise_support_agent.api.user_router import (
+from enterprise_support_agent.api.users.user_router import (
     router as user_router,
 )
-from enterprise_support_agent.api.membership_router import (
+from enterprise_support_agent.api.organizations.membership_router import (
     router as membership_router,
 )
-from enterprise_support_agent.api.auth_router import (
+from enterprise_support_agent.api.auth.auth_router import (
     router as auth_router,
 )
-from enterprise_support_agent.api.ticket_router import (
+from enterprise_support_agent.api.tickets.ticket_router import (
     router as ticket_router,
 )
-from enterprise_support_agent.api.document_router import (
+from enterprise_support_agent.api.documents.document_router import (
     router as document_router,
 )
-from enterprise_support_agent.api.knowledge_search_router import (
+from enterprise_support_agent.api.knowledge.knowledge_search_router import (
     router as knowledge_search_router,
 )
-from enterprise_support_agent.api.knowledge_answer_router import (
+from enterprise_support_agent.api.knowledge.knowledge_answer_router import (
     router as knowledge_answer_router,
 )
-from enterprise_support_agent.api.agent_router import (
+from enterprise_support_agent.api.agent.agent_router import (
     router as agent_router,
 )
-from enterprise_support_agent.api.agent_conversation_router import (
+from enterprise_support_agent.api.agent.agent_conversation_router import (
     router as agent_conversation_router,
 )
 

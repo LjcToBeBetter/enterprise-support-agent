@@ -13,7 +13,7 @@ import asyncio
 
 import httpx
 
-from enterprise_support_agent.application.reranker import (
+from enterprise_support_agent.application.knowledge.reranker import (
     Reranker,
     RerankResult,
 )

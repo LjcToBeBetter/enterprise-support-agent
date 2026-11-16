@@ -22,7 +22,7 @@ from enterprise_support_agent.infrastructure.database.models.ticket import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
-from enterprise_support_agent.application.ticket_enums import (
+from enterprise_support_agent.application.tickets.ticket_enums import (
     TicketPriority,
     TicketStatus,
 )
@@ -51,6 +51,7 @@ class TicketRepository:
         title: str,
         description: str,
         priority: TicketPriority,
+        ticket_id: UUID | None = None,
     ) -> Ticket:
         """
         创建工单记录，但暂时不提交事务。
@@ -83,6 +84,11 @@ class TicketRepository:
             # .value取出真正保存到数据库的字符串。
             priority=priority.value,
         )
+
+        # 普通接口不指定ID，继续使用原来的随机UUID。
+        # Agent重试传入固定ID，让数据库主键阻止同一次操作生成两张工单。
+        if ticket_id is not None:
+            ticket.id = ticket_id
 
         # 把Ticket对象加入当前Session。
         #

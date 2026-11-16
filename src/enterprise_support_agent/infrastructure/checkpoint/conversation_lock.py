@@ -11,7 +11,7 @@ from uuid import UUID
 
 from psycopg import AsyncConnection
 
-from enterprise_support_agent.application.exceptions import (
+from enterprise_support_agent.application.common.exceptions import (
     AgentConversationConflictError,
 )
 from enterprise_support_agent.infrastructure.checkpoint.connection import (

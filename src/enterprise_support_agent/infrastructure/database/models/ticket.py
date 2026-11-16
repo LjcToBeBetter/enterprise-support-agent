@@ -23,7 +23,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from enterprise_support_agent.application.ticket_enums import (
+from enterprise_support_agent.application.tickets.ticket_enums import (
     TicketPriority,
     TicketStatus,
 )

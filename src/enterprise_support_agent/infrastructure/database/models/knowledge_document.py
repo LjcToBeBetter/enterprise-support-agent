@@ -28,7 +28,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from enterprise_support_agent.application.document_enums import (
+from enterprise_support_agent.application.documents.document_enums import (
     DocumentStatus,
 )
 from enterprise_support_agent.infrastructure.database.base import (

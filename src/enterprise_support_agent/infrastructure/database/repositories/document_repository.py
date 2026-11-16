@@ -23,7 +23,7 @@ from enterprise_support_agent.infrastructure.database.models.knowledge_document 
 
 from sqlalchemy import select,func
 
-from enterprise_support_agent.application.document_enums import (
+from enterprise_support_agent.application.documents.document_enums import (
     DocumentStatus,
 )
 
